@@ -164,6 +164,12 @@ springdoc:
     operations-sorter: alpha
   packages-to-scan: com.minimax.dualrecord.controller
 
+  # 孤儿业务扫描（替代 Saga 补偿的兜底机制）
+  scheduler:
+    enabled: true
+    scan-interval-ms: 300000       # 5 分钟扫一次
+    stale-threshold-minutes: 30    # 30 分钟未更新的业务视为孤儿
+
 # ===== MyBatis-Plus =====
 mybatis-plus:
   configuration:

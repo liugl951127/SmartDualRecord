@@ -12,11 +12,11 @@ import java.util.Set;
  * 双录状态机 · 静态规则
  *
  * 状态转移表是显式枚举的（不是动态配置的），便于审查和测试。
- * 任何非法转移直接抛异常，由 Saga 协调器捕获并触发补偿。
+ * 任何非法转移直接抛异常，由 @Transactional 事务回滚机制处理。
  *
  * 设计原则：
  *  1. 任何状态变更都必须查这张表
- *  2. 失败状态（FAILED/ROLLED_BACK）可由 Saga 显式回退到非失败态
+ *  2. 失败状态（FAILED）可由人工标 FAIL 终态
  *  3. 终态（ARCHIVED）只能向前
  */
 public final class RecordingStateMachine {

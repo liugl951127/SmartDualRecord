@@ -102,6 +102,24 @@ public class RecordingController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/human-review")
+    @Operation(summary = "人工复核完成（HUMAN_REVIEW → HUMAN_REVIEWED）")
+    public ResponseEntity<Void> humanReview(@RequestParam String businessId,
+                                             @RequestParam String reviewStatus,
+                                             @RequestParam String reviewerId) {
+        recordingService.humanReview(businessId, reviewStatus, reviewerId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/manual-fail")
+    @Operation(summary = "运维介入：手动标 FAILED（替代 Saga 模式的回滚机制）")
+    public ResponseEntity<Void> manualFail(@RequestParam String businessId,
+                                            @RequestParam String reason,
+                                            @RequestParam String operatorId) {
+        recordingService.manualFail(businessId, reason, operatorId);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/overview/{businessId}")
     @Operation(summary = "查询业务全景")
     public ResponseEntity<Map<String, Object>> overview(@PathVariable String businessId) {

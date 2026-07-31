@@ -11,7 +11,7 @@ import java.util.Set;
  *   RECORDING → RECORDED → AI_QA → AI_QA_PASSED|AI_QA_FLAGGED →
  *   HUMAN_REVIEW → HUMAN_REVIEWED → SIGNED → ARCHIVED
  *
- * 任何中断（FAILED/ROLLED_BACK）可由 Saga 补偿到上一致状态。
+ * 任何中断会回滚到上一个事务提交点。
  */
 public enum RecordingState {
     /** 客户进入双录 */
