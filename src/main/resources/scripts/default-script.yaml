@@ -1,0 +1,145 @@
+# =================================================================
+# 默认话术模板 (Default Script Template)
+# 这是"通用配置"层 - 所有新接入的产品在没有专属 YAML 之前都跑这一份
+# 字段缺失 = 报错，绝不静默用空内容
+#
+# 设计原则：
+#  1. 内容 100% 兜底，新产品不动这文件也能合规运行
+#  2. 风险等级缺省 = R2（最常见的中低风险，理财/基金常用）
+#  3. 8 节点齐全，每个节点都有必播项、必问、关键节点标志
+#  4. 占位符 {productName} / {productRiskLevel} 运行时被替换
+# =================================================================
+
+product_id: __DEFAULT__
+product_type: GENERIC
+risk_level: R2
+version: default-v1
+
+# 适用：所有产品族（保险/理财/基金）都覆盖
+target_customer:
+  min_age: 18
+  max_age: 75
+  min_risk_tolerance: C1
+
+regulatory_refs:
+  - 金发〔2026〕8 号
+  - 保险销售行为可回溯管理暂行办法
+  - 金融机构产品适当性管理办法
+  - 商业银行理财业务监督管理办法
+  - 基金募集机构投资者适当性管理实施指引
+
+# ============ 8 节点通用定义 ============
+nodes:
+  - node_id: 01-identity
+    display_name: 出示身份证明
+    duration_sec: 30
+    mandatory_phrases:
+      - "您好，请出示您的身份证件"
+    critical: false
+    require_asr_affirmative: false
+    require_human_dual_sign: false
+
+  - node_id: 02-disclosure
+    display_name: 风险揭示
+    duration_sec: 90
+    mandatory_phrases:
+      - "本产品 {productName} 为非保本浮动收益型，不保证本金和收益"
+      - "投资有风险，过往业绩不代表未来表现"
+      - "请仔细阅读产品说明书和风险揭示书"
+    critical: true
+    require_asr_affirmative: false
+    require_human_dual_sign: false
+
+  - node_id: 03-product
+    display_name: 产品展示
+    duration_sec: 60
+    mandatory_phrases:
+      - "本次申办的 {productName} 风险等级为 {productRiskLevel}"
+    critical: false
+
+  - node_id: 04-rights
+    display_name: 权利义务告知
+    duration_sec: 45
+    mandatory_phrases:
+      - "您有权在规定时间内申请赎回"
+      - "本金及收益风险由投资者自行承担"
+    critical: false
+
+  - node_id: 05-truth-tell
+    display_name: 如实告知询问
+    duration_sec: 60
+    required_questions:
+      - 本次投资资金是否为借贷资金？
+      - 您是否在其他金融机构有类似产品持仓？
+    critical: false
+
+  - node_id: 06-confirm
+    display_name: 明确肯定答复
+    duration_sec: 20
+    mandatory_phrases:
+      - "您是否已了解本产品的风险特征？"
+      - "您是否已阅读相关法律文件？"
+    critical: true
+    require_asr_affirmative: true
+    require_human_dual_sign: true
+
+  - node_id: 07-sign
+    display_name: 签署产品协议
+    duration_sec: 45
+    documents:
+      - 产品协议
+      - 风险揭示书
+    require_ca_signature: true
+    critical: false
+
+  - node_id: 08-followup
+    display_name: 补充询问
+    duration_sec: 20
+    critical: false
+
+# ============ 通用禁播词 ============
+forbidden_phrases:
+  - "保证收益"
+  - "保本保息"
+  - "稳赚不赔"
+  - "绝对安全"
+  - "无风险"
+  - "肯定盈利"
+  - "一定不亏"
+  - "和存款一样"
+
+# ============ 通用必问问题 ============
+required_questions:
+  - 您是否已了解本产品的风险特征？
+  - 您是否已阅读产品说明书和风险揭示书？
+  - 您的投资目标是否与本产品期限匹配？
+
+# ============ 4 渠道差分 ============
+channel_overrides:
+  OFFLINE:
+    sync_mode: same_frame
+    ai_disclosure: false
+  REMOTE_VIDEO:
+    sync_mode: same_frame
+    ai_disclosure: false
+  SELF_AI:
+    sync_mode: ai_with_disclosure
+    ai_disclosure: per_minute
+    watermark_visible: true
+    audio_id_per_minute: 1
+  INTERNET_TEXT:
+    sync_mode: text_only
+    ai_disclosure: false
+
+# ============ 客户主动申请不匹配产品时的二次确认 ============
+mismatch_secondary_disclosure:
+  trigger: "客户风险等级 < 产品风险等级"
+  script: |
+    您本次申请的 {productName} 风险等级为 {productRiskLevel}，
+    而您的风险承受能力评级为 C{customerLevel}。
+    根据监管要求，请您书面确认：
+    1. 您已充分了解本产品风险高于您目前的承受能力
+    2. 此次购买是您主动申请，非理财经理推荐
+    3. 您接受可能产生的本金损失
+  require_written_confirm: true
+  require_human_dual_sign: true

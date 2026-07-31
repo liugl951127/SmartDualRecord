@@ -1,0 +1,41 @@
+# 编译产物
+target/
+build/
+out/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/
+*.iws
+*.ipr
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 本地配置
+application-local.yml
+application-local.yaml
+.env
+.env.local
+
+# Maven
+.mvn/
+mvnw
+mvnw.cmd
+*.versionsBackup
+
+# 临时文件
+*.swp
+*.swo
+*~
+*.bak

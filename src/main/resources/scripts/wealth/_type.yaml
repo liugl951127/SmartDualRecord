@@ -1,0 +1,63 @@
+# 银行理财产品族默认话术
+# 在银行理财产品的专属 YAML 缺失时，使用此模板
+
+product_id: type:WEALTH
+product_type: WEALTH
+risk_level: R2
+version: type-default-v1
+
+regulatory_refs:
+  - 商业银行理财业务监督管理办法
+  - 银行业金融机构销售专区录音录像管理暂行规定
+  - 金融机构产品适当性管理办法
+  - 金发〔2026〕8号
+
+target_customer:
+  min_age: 18
+  max_age: 75
+  min_risk_tolerance: C2
+
+# 理财特有：封闭期、业绩比较基准
+nodes:
+  - node_id: 02-disclosure
+    display_name: 风险揭示
+    duration_sec: 90
+    mandatory_phrases:
+      - "本产品为非保本浮动收益型理财"
+      - "业绩比较基准不代表实际收益，过往业绩不代表未来表现"
+      - "本金及收益风险由投资者自行承担"
+    critical: true
+
+  - node_id: 04-rights
+    display_name: 权利义务告知
+    duration_sec: 45
+    mandatory_phrases:
+      - "产品设有封闭期，封闭期内不可提前赎回"
+      - "具体封闭期天数以产品说明书为准"
+      - "本金及收益风险由投资者自行承担"
+
+  - node_id: 06-confirm
+    display_name: 明确肯定答复
+    duration_sec: 20
+    mandatory_phrases:
+      - "您是否已了解产品为非保本浮动收益？"
+      - "您是否已了解业绩比较基准的含义？"
+    critical: true
+    require_asr_affirmative: true
+    require_human_dual_sign: true
+
+  - node_id: 07-sign
+    display_name: 签署理财协议
+    duration_sec: 45
+    documents:
+      - 理财协议
+      - 风险揭示书
+      - 产品说明书
+    require_ca_signature: true
+
+# 理财族通用禁播词
+forbidden_phrases:
+  - "和存款一样"
+  - "肯定超过业绩基准"
+  - "肯定保本"
+  - "理财存款"

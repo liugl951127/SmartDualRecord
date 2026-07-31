@@ -1,0 +1,105 @@
+product_id: BNK-FIN-2026Q3-001
+product_name: 稳健型封闭式理财
+product_type: WEALTH_STABLE
+risk_level: R2
+period_days: 180
+min_purchase: "10000"
+benchmark_return: "3.0%-3.8%"
+
+target_customer:
+  min_risk_tolerance: C2
+  investment_experience_required: "任何"
+
+regulatory_refs:
+  - 商业银行理财业务监督管理办法
+  - 金融机构产品适当性管理办法
+  - 银行业金融机构销售专区录音录像管理暂行规定
+  - 金发〔2026〕8号
+
+nodes:
+  - node_id: 01-identity
+    display_name: 出示身份证明
+    duration_sec: 30
+    mandatory_phrases:
+      - "您好，我是理财经理 XXX"
+      - "请出示您的身份证件"
+    operator_role: SELLER
+
+  - node_id: 02-disclosure
+    display_name: 风险揭示
+    duration_sec: 90
+    mandatory_phrases:
+      - "本产品为非保本浮动收益型理财，不保证本金和收益"
+      - "业绩比较基准 3.0%-3.8%，不代表实际收益"
+      - "过往业绩不代表未来表现"
+    critical: true
+
+  - node_id: 03-product
+    display_name: 产品展示
+    duration_sec: 60
+    mandatory_phrases:
+      - "本产品为 180 天封闭式理财"
+      - "起购金额 1 万元"
+      - "投资方向：固定收益类资产"
+
+  - node_id: 04-rights
+    display_name: 权利义务告知
+    duration_sec: 45
+    mandatory_phrases:
+      - "封闭期内不可提前赎回"
+      - "本金及收益风险由投资者自行承担"
+
+  - node_id: 05-truth-tell
+    display_name: 如实告知询问
+    duration_sec: 60
+    required_questions:
+      - 本次投资资金是否为借贷资金？
+      - 您是否在其他银行有类似理财产品持仓？
+
+  - node_id: 06-confirm
+    display_name: 明确肯定答复
+    duration_sec: 20
+    mandatory_phrases:
+      - "您是否已了解产品为非保本浮动收益？"
+      - "您是否已了解业绩比较基准的含义？"
+    critical: true
+    require_asr_affirmative: true
+    require_human_dual_sign: true
+
+  - node_id: 07-sign
+    display_name: 签署理财协议
+    duration_sec: 45
+    documents:
+      - 理财协议
+      - 风险揭示书
+    require_ca_signature: true
+
+  - node_id: 08-followup
+    display_name: 补充询问
+    duration_sec: 20
+
+forbidden_phrases:
+  - "保本保息"
+  - "无风险"
+  - "稳赚不赔"
+  - "绝对安全"
+  - "和存款一样"
+  - "肯定超过 3.8%"
+
+required_questions:
+  - 您是否已了解产品为非保本浮动收益？
+  - 您是否已了解业绩比较基准的含义？
+  - 您是否已了解 180 天封闭期限制？
+  - 您的投资目标是否与本产品期限匹配？
+
+channel_overrides:
+  OFFLINE:
+    sync_mode: same_frame
+  REMOTE_VIDEO:
+    sync_mode: same_frame
+  SELF_AI:
+    sync_mode: ai_with_disclosure
+    ai_disclosure: per_minute
+    watermark_visible: true
+  INTERNET_TEXT:
+    sync_mode: text_only

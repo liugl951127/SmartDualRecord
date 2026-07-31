@@ -1,0 +1,65 @@
+# 保险产品族默认话术
+# 在保险产品的专属 YAML 缺失时，使用此模板
+# 字段缺失会继续向下层（global default）兜底
+
+product_id: type:INSURANCE
+product_type: INSURANCE
+risk_level: P3
+version: type-default-v1
+
+regulatory_refs:
+  - 保险销售行为可回溯管理暂行办法
+  - 保险产品适当性管理自律规范
+  - 金发〔2026〕8号
+
+target_customer:
+  min_age: 18
+  max_age: 70
+  min_risk_tolerance: C2
+
+# 保险特有：犹豫期 15 天
+nodes:
+  - node_id: 02-disclosure
+    display_name: 风险揭示
+    duration_sec: 120
+    mandatory_phrases:
+      - "本产品为保险合同，受《保险法》及监管规定保护"
+      - "犹豫期为本合同生效之日起 15 天内，犹豫期内退保仅扣除不超过 10 元工本费"
+      - "犹豫期后退保将面临本金损失，具体金额参见保单现金价值表"
+    critical: true
+
+  - node_id: 04-rights
+    display_name: 权利义务告知
+    duration_sec: 60
+    mandatory_phrases:
+      - "犹豫期为本合同生效之日起 15 天"
+      - "犹豫期内退保仅扣除工本费"
+      - "犹豫期后退保有本金损失风险"
+      - "保单现金价值随时间变化"
+
+  - node_id: 06-confirm
+    display_name: 明确肯定答复
+    duration_sec: 30
+    mandatory_phrases:
+      - "您是否已了解犹豫期及退保损失？"
+      - "您是否已阅读保险条款和产品说明书？"
+    critical: true
+    require_asr_affirmative: true
+    require_human_dual_sign: true
+
+  - node_id: 07-sign
+    display_name: 签署投保文件
+    duration_sec: 60
+    documents:
+      - 投保单
+      - 保险条款
+      - 产品说明书
+      - 风险揭示书
+    require_ca_signature: true
+
+# 保险族通用禁播词（额外的）
+forbidden_phrases:
+  - "保证理赔"
+  - "100% 赔付"
+  - "绝对获赔"
+  - "零风险保本"

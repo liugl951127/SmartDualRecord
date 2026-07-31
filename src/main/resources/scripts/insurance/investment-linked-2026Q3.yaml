@@ -1,0 +1,133 @@
+product_id: LIC-INV-2026Q3-001
+product_name: 投连险稳健账户
+product_type: INVESTMENT_LINKED
+risk_level: P5
+insurance_period: 10
+premium: "100000"
+target_customer:
+  min_age: 18
+  max_age: 70
+  min_risk_tolerance: C3
+  min_annual_income: "100000"
+regulatory_refs:
+  - 保险销售行为可回溯管理暂行办法
+  - 保险产品适当性管理自律规范
+  - 金发〔2026〕8号
+
+# 8 节点 + 必播项（每个节点都有必须播报的内容）
+nodes:
+  - node_id: 01-identity
+    display_name: 出示身份证明
+    duration_sec: 30
+    mandatory_phrases:
+      - "您好，我是理财经理 XXX，工号 XXXX"
+      - "请出示您的身份证件"
+    operator_role: SELLER
+
+  - node_id: 02-disclosure
+    display_name: 风险揭示
+    duration_sec: 120
+    mandatory_phrases:
+      - "本产品属于投资连结型保险，投资部分回报具有不确定性"
+      - "可能低于定期存款或出现本金损失"
+      - "保险公司不保证最低收益，不承诺保本"
+    critical: true
+
+  - node_id: 03-product
+    display_name: 产品展示
+    duration_sec: 90
+    mandatory_phrases:
+      - "本产品为 10 年期投连险"
+      - "起投金额 10 万元"
+      - "投资方向：稳健型账户，主要配置固定收益类资产"
+    document_required:
+      - 产品说明书
+      - 投资账户说明书
+
+  - node_id: 04-rights
+    display_name: 权利义务告知
+    duration_sec: 60
+    mandatory_phrases:
+      - "犹豫期为本合同生效之日起 15 天内"
+      - "犹豫期内退保仅扣除不超过 10 元的工本费"
+      - "犹豫期后退保将面临本金损失"
+
+  - node_id: 05-truth-tell
+    display_name: 如实告知询问
+    duration_sec: 90
+    required_questions:
+      - 您是否有既往病史？
+      - 您是否在其他保险公司有类似保单？
+      - 本次投保资金是否为借贷资金？
+    critical: true
+
+  - node_id: 06-confirm
+    display_name: 明确肯定答复
+    duration_sec: 30
+    mandatory_phrases:
+      - "您是否已了解本产品的投资风险？"
+      - "您是否已阅读并理解产品说明书和投资账户说明书？"
+      - "您是否已了解犹豫期及退保损失？"
+    critical: true
+    require_asr_affirmative: true
+    require_human_dual_sign: true
+
+  - node_id: 07-sign
+    display_name: 签署投保文件
+    duration_sec: 60
+    documents:
+      - 投保单
+      - 产品说明书
+      - 风险揭示书
+    require_ca_signature: true
+
+  - node_id: 08-followup
+    display_name: 补充询问
+    duration_sec: 30
+    prompt: "请问您还有其他问题吗？"
+
+# 禁播词（命中立即阻断）
+forbidden_phrases:
+  - "保证收益"
+  - "基本不会亏"
+  - "稳赚"
+  - "保本"
+  - "肯定高于银行"
+  - "绝对安全"
+
+# 必问问题
+required_questions:
+  - 您是否已了解本产品的投资风险？
+  - 您是否已阅读并理解产品说明书和投资账户说明书？
+  - 您是否已了解犹豫期及退保损失？
+  - 您的投资经验是否涵盖投连险或类似产品？
+
+# 4 渠道差分
+channel_overrides:
+  OFFLINE:
+    sync_mode: same_frame
+    ai_disclosure: false
+  REMOTE_VIDEO:
+    sync_mode: same_frame
+    ai_disclosure: false
+  SELF_AI:
+    sync_mode: ai_with_disclosure
+    ai_disclosure: per_minute
+    watermark_visible: true
+    audio_id_per_minute: 1
+  INTERNET_TEXT:
+    sync_mode: text_only
+    ai_disclosure: false
+
+# 客户主动申请不匹配产品时的二次确认话术
+mismatch_secondary_disclosure:
+  trigger: "客户风险等级 < 产品风险等级"
+  script: |
+    您本次申请的投连险产品风险等级为 P5，
+    而您的风险承受能力评级为 C{客户等级}。
+    根据监管要求，请您书面确认：
+    1. 您已充分了解本产品风险高于您目前的承受能力
+    2. 此次购买是您主动申请，非理财经理推荐
+    3. 您接受可能产生的本金损失
+  require_written_confirm: true
+  require_human_dual_sign: true

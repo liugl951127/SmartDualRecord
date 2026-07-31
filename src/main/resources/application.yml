@@ -1,0 +1,197 @@
+spring:
+  application:
+    name: dual-record-llm-service
+  profiles:
+    active: sandbox
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+server:
+  port: 8080
+  servlet:
+    context-path: /
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 20
+    accept-count: 100
+
+# ===== 业务配置 =====
+dual-record:
+  # 业务 ID 前缀
+  business-id:
+    insurance-prefix: ORD
+    wealth-prefix: BNK
+    fund-prefix: FND
+  # 录像
+  recording:
+    # 一次性生成，不可暂停（监管要求）
+    allow-pause: false
+    # 时间戳精度
+    timestamp-precision: ms
+    # 节点超时（秒）
+    node-timeout-sec: 120
+  # 存证
+  evidence:
+    encryption: SM4-CBC
+    blockchain: FISCO-BCOS
+    retention-years: 10
+  # AI 网关
+  ai-gateway:
+    # 4 个 LLM 提供商，按权重路由
+    providers:
+      - name: aliyun
+        weight: 40
+        model: qwen-max
+        endpoint: ${ALIYUN_LLM_ENDPOINT:}
+      - name: deepseek
+        weight: 30
+        model: deepseek-chat
+        endpoint: ${DEEPSEEK_LLM_ENDPOINT:}
+      - name: openai
+        weight: 20
+        model: gpt-4o
+        endpoint: ${OPENAI_LLM_ENDPOINT:}
+      - name: mock
+        weight: 10
+        model: mock-llm-v1
+        endpoint: local://mock
+  # 反深伪
+  deepfake-detector:
+    threshold: 0.92
+    channels: [VISUAL_FACE_SWAP, VOICE_CLONE, PHYSIOLOGICAL, CROSS_MODAL]
+  # 4 渠道配置
+  channels:
+    - code: OFFLINE
+      display-name: 线下面对面
+      require-same-frame: true
+    - code: REMOTE_VIDEO
+      display-name: 远程视频
+      require-same-frame: true
+    - code: SELF_AI
+      display-name: 自助AI数字人
+      require-same-frame: false
+      require-ai-disclosure: true
+    - code: INTERNET_TEXT
+      display-name: 互联网文本
+      require-same-frame: false
+  # 质检
+  qa:
+    pre-screen-ratio: 1.0
+    human-sample-ratio: 0.30
+    high-risk-sample-ratio: 1.0
+  # 风险评估
+  risk-assessment:
+    validity-months: 12
+    # 9 维评估因子
+    factors:
+      - liquidity        # 流动性
+      - maturity         # 到期时限
+      - leverage         # 杠杆
+      - complexity       # 结构复杂性
+      - min-amount       # 最低金额
+      - investment-direction  # 投资方向
+      - offering-method  # 募集方式
+      - issuer-credit    # 发行人信用
+      - historical-perf  # 同类业绩
+
+  # 话术通用配置（三层叠加：产品专属 → 产品族 → 全局默认）
+  script:
+    # 全局默认风险等级（兜底）
+    default-risk-level: R2
+    # 全局默认节点超时
+    default-node-timeout-sec: 90
+    # 全局默认禁播词（所有产品共享）
+    default-forbidden-phrases:
+      - "保证收益"
+      - "保本保息"
+      - "稳赚不赔"
+      - "绝对安全"
+      - "无风险"
+      - "肯定盈利"
+      - "一定不亏"
+      - "和存款一样"
+    # 全局默认必问
+    default-required-questions:
+      - "您是否已了解本产品的风险特征？"
+      - "您是否已阅读产品说明书和风险揭示书？"
+      - "您的投资目标是否与本产品期限匹配？"
+    # 全局默认必播
+    default-mandatory-phrases:
+      - "本产品不保证本金和收益"
+      - "投资有风险，过往业绩不代表未来表现"
+    # 按产品族默认风险等级
+    product-type-risk-level:
+      INSURANCE: P3
+      WEALTH: R2
+      FUND: R2
+    # 渠道差分（默认）
+    default-channel-overrides:
+      OFFLINE:
+        sync-mode: same_frame
+        watermark-visible: false
+        ai-disclosure: false
+        audio-id-per-minute: 0
+      REMOTE_VIDEO:
+        sync-mode: same_frame
+        watermark-visible: false
+        ai-disclosure: false
+        audio-id-per-minute: 0
+      SELF_AI:
+        sync-mode: ai_with_disclosure
+        watermark-visible: true
+        ai-disclosure: true
+        audio-id-per-minute: 1
+      INTERNET_TEXT:
+        sync-mode: text_only
+        watermark-visible: false
+        ai-disclosure: false
+        audio-id-per-minute: 0
+
+# ===== SpringDoc / Swagger =====
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  packages-to-scan: com.minimax.dualrecord.controller
+
+# ===== MyBatis-Plus =====
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+  global-config:
+    db-config:
+      id-type: ASSIGN_ID
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  mapper-locations: classpath*:/mapper/**/*.xml
+
+# ===== Logging =====
+logging:
+  level:
+    root: INFO
+    com.minimax.dualrecord: DEBUG
+    com.baomidou.mybatisplus: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# ===== Actuator =====
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized

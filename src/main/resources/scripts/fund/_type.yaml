@@ -1,0 +1,69 @@
+# 基金产品族默认话术
+# 在基金产品的专属 YAML 缺失时，使用此模板
+
+product_id: type:FUND
+product_type: FUND
+risk_level: R2
+version: type-default-v1
+
+regulatory_refs:
+  - 证券投资基金销售适用性指导意见
+  - 基金募集机构投资者适当性管理实施指引
+  - 金融机构产品适当性管理办法
+  - 金发〔2026〕8号
+
+target_customer:
+  min_age: 18
+  max_age: 75
+  min_risk_tolerance: C2
+
+# 基金特有：净值波动、过往业绩
+nodes:
+  - node_id: 02-disclosure
+    display_name: 风险揭示
+    duration_sec: 90
+    mandatory_phrases:
+      - "基金有风险，投资须谨慎"
+      - "本基金净值会随市场波动，过往业绩不代表未来表现"
+      - "本基金不保证保本及最低收益"
+    critical: true
+
+  - node_id: 03-product
+    display_name: 产品展示
+    duration_sec: 60
+    mandatory_phrases:
+      - "请仔细阅读基金合同、招募说明书等法律文件"
+      - "本基金的投资范围和风险特征详见基金合同"
+
+  - node_id: 04-rights
+    display_name: 权利义务告知
+    duration_sec: 45
+    mandatory_phrases:
+      - "您有权在 T+1 日申请赎回"
+      - "本基金不保证保本及最低收益"
+
+  - node_id: 06-confirm
+    display_name: 明确肯定答复
+    duration_sec: 20
+    mandatory_phrases:
+      - "您是否已阅读基金合同和招募说明书？"
+      - "您是否已了解本基金的投资范围和风险特征？"
+    critical: true
+    require_asr_affirmative: true
+    require_human_dual_sign: true
+
+  - node_id: 07-sign
+    display_name: 签署基金交易申请
+    duration_sec: 45
+    documents:
+      - 基金交易申请书
+      - 风险揭示书
+      - 基金合同
+    require_ca_signature: true
+
+# 基金族通用禁播词
+forbidden_phrases:
+  - "保本基金"
+  - "肯定盈利"
+  - "一定不亏"
+  - "承诺收益"
