@@ -118,134 +118,134 @@ INSERT INTO tb_script_template (id, product_id, product_type, version, risk_leve
 INSERT INTO tb_risk_assessment (id, customer_id_hash, assessment_id, answers_json, overall_score, risk_level, valid_until) VALUES
 ('ra-001', 'cust-hash-001', 'ASSESS20260801-0001',
  '{"q1_age":"35-50","q2_income":"500k-1m","q3_experience":"3-5年","q4_loss_tolerance":"20%","q5_horizon":"1-3年"}',
- 65.0, 'C3', DATEADD('MONTH', 12, CURRENT_DATE)),
+ 65.0, 'C3', DATE_ADD(CURRENT_DATE, INTERVAL 12 MONTH)),
 
 ('ra-002', 'cust-hash-002', 'ASSESS20260801-0002',
  '{"liquidity":"30天","maturity":"30-90天","leverage":"无","structural_complexity":"普通理财","min_amount":"1万元","investment_direction":"股债混合","offering_method":"公募","issuer_credit":"AA","historical_performance":"15-30%"}',
- 50.0, 'C3', DATEADD('MONTH', 12, CURRENT_DATE)),
+ 50.0, 'C3', DATE_ADD(CURRENT_DATE, INTERVAL 12 MONTH)),
 
 ('ra-003', 'cust-hash-003', 'ASSESS20260801-0003',
  '{"liquidity":"1年","maturity":">1年","leverage":"1:5","structural_complexity":"衍生品/PE","min_amount":"100万","investment_direction":"私募/海外","offering_method":"私募+跨境","issuer_credit":"BBB","historical_performance":"50%+,高弹性"}',
- 90.0, 'C5', DATEADD('MONTH', 12, CURRENT_DATE));
+ 90.0, 'C5', DATE_ADD(CURRENT_DATE, INTERVAL 12 MONTH));
 
 -- 4. 测试业务 4 笔 (覆盖不同状态)
 INSERT INTO tb_business (id, business_id, business_type, product_id, customer_id_hash, seller_id_hash, channel, state, current_node, amount, risk_level, product_risk_level, created_at, updated_at, archived_at, `deleted`) VALUES
 -- 已归档 (成功)
-('biz-001', 'BNK20260801-900001', 'WEALTH', 'BNK-FIN-2026Q3-001', 'cust-hash-001', 'seller-hash-001', 'OFFLINE', 'ARCHIVED', '08-FOLLOWUP', 50000.00, 'C1', 'R2', TIMESTAMP '2026-07-20 10:00:00', TIMESTAMP '2026-07-20 10:45:00', TIMESTAMP '2026-07-20 10:45:00', 0),
+('biz-001', 'BNK20260801-900001', 'WEALTH', 'BNK-FIN-2026Q3-001', 'cust-hash-001', 'seller-hash-001', 'OFFLINE', 'ARCHIVED', '08-FOLLOWUP', 50000.00, 'C1', 'R2', '2026-07-20 10:00:00', '2026-07-20 10:45:00', '2026-07-20 10:45:00', 0),
 
 -- 已归档 (高风险客户买高风险产品)
-('biz-002', 'LIC20260801-900001', 'INSURANCE', 'LIC-INV-2026Q3-001', 'cust-hash-003', 'seller-hash-002', 'REMOTE_VIDEO', 'ARCHIVED', '08-FOLLOWUP', 100000.00, 'C5', 'P5', TIMESTAMP '2026-07-25 14:00:00', TIMESTAMP '2026-07-25 14:50:00', TIMESTAMP '2026-07-25 14:50:00', 0),
+('biz-002', 'LIC20260801-900001', 'INSURANCE', 'LIC-INV-2026Q3-001', 'cust-hash-003', 'seller-hash-002', 'REMOTE_VIDEO', 'ARCHIVED', '08-FOLLOWUP', 100000.00, 'C5', 'P5', '2026-07-25 14:00:00', '2026-07-25 14:50:00', '2026-07-25 14:50:00', 0),
 
 -- 进行中 (8 节点完成中)
-('biz-003', 'BNK20260801-900003', 'WEALTH', 'BNK-MIX-2026Q3-002', 'cust-hash-002', 'seller-hash-003', 'OFFLINE', 'RECORDING', '05-TRUTH_TELL', 80000.00, 'C3', 'R3', TIMESTAMP '2026-08-01 09:00:00', TIMESTAMP '2026-08-01 09:25:00', NULL, 0),
+('biz-003', 'BNK20260801-900003', 'WEALTH', 'BNK-MIX-2026Q3-002', 'cust-hash-002', 'seller-hash-003', 'OFFLINE', 'RECORDING', '05-TRUTH_TELL', 80000.00, 'C3', 'R3', '2026-08-01 09:00:00', '2026-08-01 09:25:00', NULL, 0),
 
 -- 失败 (异常)
-('biz-004', 'FND20260801-900004', 'FUND', 'FND-STK-2026Q3-002', 'cust-hash-002', 'seller-hash-001', 'SELF_AI', 'FAILED', '02-DISCLOSURE', 60000.00, 'C3', 'R4', TIMESTAMP '2026-08-01 10:00:00', TIMESTAMP '2026-08-01 10:15:00', NULL, 0);
+('biz-004', 'FND20260801-900004', 'FUND', 'FND-STK-2026Q3-002', 'cust-hash-002', 'seller-hash-001', 'SELF_AI', 'FAILED', '02-DISCLOSURE', 60000.00, 'C3', 'R4', '2026-08-01 10:00:00', '2026-08-01 10:15:00', NULL, 0);
 
 -- 5. 录像 5 段 (每笔业务 1 段, biz-001/biz-002 含数字人 2 段)
 INSERT INTO tb_recording (id, rec_id, business_id, channel, seller_type, rec_start_utc, rec_end_utc, duration_ms, file_path, file_sha256, file_size_bytes, encryption, blockchain_tx, watermark_visible, audio_id_per_minute, linked_rec_id, location_branch, retention_until, quality_score, quality_status, resolution, fps, audio_bitrate, black_frame_ratio, customer_face_ratio, third_party_count, location_lat, location_lng, ip_address, device_fingerprint, encryption_iv, signed_hash, preservation_id, retention_notified_at, created_at, `deleted`) VALUES
 -- biz-001 线下录像
 ('rec-001', 'REC20260801-9001', 'BNK20260801-900001', 'OFFLINE', 'HUMAN',
-  TIMESTAMP '2026-07-20 10:00:00', TIMESTAMP '2026-07-20 10:45:00', 2700000,
+  '2026-07-20 10:00:00', '2026-07-20 10:45:00', 2700000,
   '/recordings/20260720/BNK20260801-000001.mp4',
   'a3f5d2e8b2c4e6f8a3f5d2e8b2c4e6f8a3f5d2e8b2c4e6f8a3f5d2e8b2c4e6f8',
   52428800, 'SM4-CBC', '0xabc123def456', 0, 0, NULL, '北京朝阳支行',
-  DATE '2036-07-20', 95, 'PASS', '1920x1080', 25, 64000, 0.50, 95.00, 0, 39.904200, 116.407400, '192.168.1.1', 'dev-bj-cyz-001', 'iv-001', 'sig-001', NULL, NULL, TIMESTAMP '2026-07-20 10:00:00', 0),
+  DATE '2036-07-20', 95, 'PASS', '1920x1080', 25, 64000, 0.50, 95.00, 0, 39.904200, 116.407400, '192.168.1.1', 'dev-bj-cyz-001', 'iv-001', 'sig-001', NULL, NULL, '2026-07-20 10:00:00', 0),
 
 -- biz-002 远程 (1 段: 远程视频)
 ('rec-002', 'REC20260801-9002', 'LIC20260801-900001', 'REMOTE_VIDEO', 'HUMAN',
-  TIMESTAMP '2026-07-25 14:00:00', TIMESTAMP '2026-07-25 14:50:00', 3000000,
+  '2026-07-25 14:00:00', '2026-07-25 14:50:00', 3000000,
   '/recordings/20260725/LIC20260801-000001.mp4',
   'b2c4e6f8a3f5d2e8b2c4e6f8a3f5d2e8b2c4e6f8a3f5d2e8b2c4e6f8a3f5d2e8',
   62914560, 'SM4-CBC', '0xbcd234ef567', 0, 0, NULL, NULL,
-  DATE '2036-07-25', 88, 'PASS_WITH_FINDINGS', '1280x720', 24, 48000, 8.50, 88.20, 1, NULL, NULL, '10.0.0.5', 'dev-sh-001', 'iv-002', 'sig-002', 'PR-20260801-001', NULL, TIMESTAMP '2026-07-25 14:00:00', 0),
+  DATE '2036-07-25', 88, 'PASS_WITH_FINDINGS', '1280x720', 24, 48000, 8.50, 88.20, 1, NULL, NULL, '10.0.0.5', 'dev-sh-001', 'iv-002', 'sig-002', 'PR-20260801-001', NULL, '2026-07-25 14:00:00', 0),
 
 -- biz-002 数字人 (1 段: AI 数字人, 关联远程)
 ('rec-003', 'REC20260801-9003', 'LIC20260801-900001', 'SELF_AI', 'AI_DIGITAL_HUMAN',
-  TIMESTAMP '2026-07-25 13:00:00', TIMESTAMP '2026-07-25 13:50:00', 3000000,
+  '2026-07-25 13:00:00', '2026-07-25 13:50:00', 3000000,
   '/recordings/20260725/LIC20260801-0001-AI.mp4',
   'c3d4e5f6a7b8c9d0c3d4e5f6a7b8c9d0c3d4e5f6a7b8c9d0c3d4e5f6a7b8c9d0',
   57671680, 'SM4-CBC', '0xcde345fg678', 1, 1, 'REC20260801-9002', NULL,
-  DATE '2036-07-25', 92, 'PASS', '1920x1080', 30, 96000, 0.20, 100.00, 0, NULL, NULL, '10.0.0.6', 'dev-ai-001', 'iv-003', 'sig-003', 'PR-20260801-002', NULL, TIMESTAMP '2026-07-25 13:00:00', 0),
+  DATE '2036-07-25', 92, 'PASS', '1920x1080', 30, 96000, 0.20, 100.00, 0, NULL, NULL, '10.0.0.6', 'dev-ai-001', 'iv-003', 'sig-003', 'PR-20260801-002', NULL, '2026-07-25 13:00:00', 0),
 
 -- biz-003 进行中 (5 节点完成)
 ('rec-004', 'REC20260801-9004', 'BNK20260801-900003', 'OFFLINE', 'HUMAN',
-  TIMESTAMP '2026-08-01 09:00:00', NULL, NULL,
+  '2026-08-01 09:00:00', NULL, NULL,
   '/recordings/20260801/BNK20260801-000003.mp4',
   'd4e5f6a7b8c9d0e1d4e5f6a7b8c9d0e1d4e5f6a7b8c9d0e1d4e5f6a7b8c9d0e1',
   31457280, 'SM4-CBC', NULL, 0, 0, NULL, '北京海淀支行',
-  DATE '2036-08-01', NULL, NULL, '1920x1080', 25, 64000, 0.10, 96.00, 0, 39.983900, 116.316400, '192.168.1.5', 'dev-bj-hd-001', 'iv-004', NULL, NULL, NULL, TIMESTAMP '2026-08-01 09:00:00', 0),
+  DATE '2036-08-01', NULL, NULL, '1920x1080', 25, 64000, 0.10, 96.00, 0, 39.983900, 116.316400, '192.168.1.5', 'dev-bj-hd-001', 'iv-004', NULL, NULL, NULL, '2026-08-01 09:00:00', 0),
 
 -- biz-004 失败 (禁播词命中)
 ('rec-005', 'REC20260801-9005', 'FND20260801-900004', 'SELF_AI', 'AI_DIGITAL_HUMAN',
-  TIMESTAMP '2026-08-01 10:00:00', TIMESTAMP '2026-08-01 10:15:00', 900000,
+  '2026-08-01 10:00:00', '2026-08-01 10:15:00', 900000,
   '/recordings/20260801/FND20260801-000004-AI.mp4',
   'e5f6a7b8c9d0e1f2e5f6a7b8c9d0e1f2e5f6a7b8c9d0e1f2e5f6a7b8c9d0e1f2',
   15728640, 'SM4-CBC', '0xdef456gh789', 1, 1, NULL, NULL,
-  DATE '2036-08-01', 45, 'FAIL', '1280x720', 20, 32000, 35.00, 65.00, 2, NULL, NULL, '10.0.0.7', 'dev-ai-002', 'iv-005', 'sig-005', NULL, NULL, TIMESTAMP '2026-08-01 10:00:00', 0);
+  DATE '2036-08-01', 45, 'FAIL', '1280x720', 20, 32000, 35.00, 65.00, 2, NULL, NULL, '10.0.0.7', 'dev-ai-002', 'iv-005', 'sig-005', NULL, NULL, '2026-08-01 10:00:00', 0);
 
 -- 6. 节点明细 (biz-001 8 节点全部完成)
 INSERT INTO tb_rec_node (id, business_id, rec_id, node_id, node_name, start_utc, end_utc, duration_ms, completed, evidence_ts, operator_id, `deleted`) VALUES
-('nd-001', 'BNK20260801-900001', 'REC20260801-9001', '01-IDENTITY', '身份核验', TIMESTAMP '2026-07-20 10:00:00', TIMESTAMP '2026-07-20 10:02:00', 120000, 1, TIMESTAMP '2026-07-20 10:02:00', 'seller-hash-001', 0),
-('nd-002', 'BNK20260801-900001', 'REC20260801-9001', '02-DISCLOSURE', '风险揭示', TIMESTAMP '2026-07-20 10:02:00', TIMESTAMP '2026-07-20 10:08:00', 360000, 1, TIMESTAMP '2026-07-20 10:08:00', 'seller-hash-001', 0),
-('nd-003', 'BNK20260801-900001', 'REC20260801-9001', '03-PRODUCT', '产品展示', TIMESTAMP '2026-07-20 10:08:00', TIMESTAMP '2026-07-20 10:18:00', 600000, 1, TIMESTAMP '2026-07-20 10:18:00', 'seller-hash-001', 0),
-('nd-004', 'BNK20260801-900001', 'REC20260801-9001', '04-RIGHTS', '权利义务', TIMESTAMP '2026-07-20 10:18:00', TIMESTAMP '2026-07-20 10:22:00', 240000, 1, TIMESTAMP '2026-07-20 10:22:00', 'seller-hash-001', 0),
-('nd-005', 'BNK20260801-900001', 'REC20260801-9001', '05-TRUTH_TELL', '如实告知', TIMESTAMP '2026-07-20 10:22:00', TIMESTAMP '2026-07-20 10:28:00', 360000, 1, TIMESTAMP '2026-07-20 10:28:00', 'seller-hash-001', 0),
-('nd-006', 'BNK20260801-900001', 'REC20260801-9001', '06-CONFIRM', '明确肯定', TIMESTAMP '2026-07-20 10:28:00', TIMESTAMP '2026-07-20 10:33:00', 300000, 1, TIMESTAMP '2026-07-20 10:33:00', 'seller-hash-001', 0),
-('nd-007', 'BNK20260801-900001', 'REC20260801-9001', '07-SIGN', '签署', TIMESTAMP '2026-07-20 10:33:00', TIMESTAMP '2026-07-20 10:38:00', 300000, 1, TIMESTAMP '2026-07-20 10:38:00', 'seller-hash-001', 0),
-('nd-008', 'BNK20260801-900001', 'REC20260801-9001', '08-FOLLOWUP', '补充询问', TIMESTAMP '2026-07-20 10:38:00', TIMESTAMP '2026-07-20 10:45:00', 420000, 1, TIMESTAMP '2026-07-20 10:45:00', 'seller-hash-001', 0),
+('nd-001', 'BNK20260801-900001', 'REC20260801-9001', '01-IDENTITY', '身份核验', '2026-07-20 10:00:00', '2026-07-20 10:02:00', 120000, 1, '2026-07-20 10:02:00', 'seller-hash-001', 0),
+('nd-002', 'BNK20260801-900001', 'REC20260801-9001', '02-DISCLOSURE', '风险揭示', '2026-07-20 10:02:00', '2026-07-20 10:08:00', 360000, 1, '2026-07-20 10:08:00', 'seller-hash-001', 0),
+('nd-003', 'BNK20260801-900001', 'REC20260801-9001', '03-PRODUCT', '产品展示', '2026-07-20 10:08:00', '2026-07-20 10:18:00', 600000, 1, '2026-07-20 10:18:00', 'seller-hash-001', 0),
+('nd-004', 'BNK20260801-900001', 'REC20260801-9001', '04-RIGHTS', '权利义务', '2026-07-20 10:18:00', '2026-07-20 10:22:00', 240000, 1, '2026-07-20 10:22:00', 'seller-hash-001', 0),
+('nd-005', 'BNK20260801-900001', 'REC20260801-9001', '05-TRUTH_TELL', '如实告知', '2026-07-20 10:22:00', '2026-07-20 10:28:00', 360000, 1, '2026-07-20 10:28:00', 'seller-hash-001', 0),
+('nd-006', 'BNK20260801-900001', 'REC20260801-9001', '06-CONFIRM', '明确肯定', '2026-07-20 10:28:00', '2026-07-20 10:33:00', 300000, 1, '2026-07-20 10:33:00', 'seller-hash-001', 0),
+('nd-007', 'BNK20260801-900001', 'REC20260801-9001', '07-SIGN', '签署', '2026-07-20 10:33:00', '2026-07-20 10:38:00', 300000, 1, '2026-07-20 10:38:00', 'seller-hash-001', 0),
+('nd-008', 'BNK20260801-900001', 'REC20260801-9001', '08-FOLLOWUP', '补充询问', '2026-07-20 10:38:00', '2026-07-20 10:45:00', 420000, 1, '2026-07-20 10:45:00', 'seller-hash-001', 0),
 
 -- biz-003 5 节点 (进行中)
-('nd-009', 'BNK20260801-900003', 'REC20260801-9004', '01-IDENTITY', '身份核验', TIMESTAMP '2026-08-01 09:00:00', TIMESTAMP '2026-08-01 09:02:00', 120000, 1, TIMESTAMP '2026-08-01 09:02:00', 'seller-hash-003', 0),
-('nd-010', 'BNK20260801-900003', 'REC20260801-9004', '02-DISCLOSURE', '风险揭示', TIMESTAMP '2026-08-01 09:02:00', TIMESTAMP '2026-08-01 09:08:00', 360000, 1, TIMESTAMP '2026-08-01 09:08:00', 'seller-hash-003', 0),
-('nd-011', 'BNK20260801-900003', 'REC20260801-9004', '03-PRODUCT', '产品展示', TIMESTAMP '2026-08-01 09:08:00', TIMESTAMP '2026-08-01 09:18:00', 600000, 1, TIMESTAMP '2026-08-01 09:18:00', 'seller-hash-003', 0),
-('nd-012', 'BNK20260801-900003', 'REC20260801-9004', '04-RIGHTS', '权利义务', TIMESTAMP '2026-08-01 09:18:00', TIMESTAMP '2026-08-01 09:22:00', 240000, 1, TIMESTAMP '2026-08-01 09:22:00', 'seller-hash-003', 0),
-('nd-013', 'BNK20260801-900003', 'REC20260801-9004', '05-TRUTH_TELL', '如实告知', TIMESTAMP '2026-08-01 09:22:00', TIMESTAMP '2026-08-01 09:25:00', 180000, 1, TIMESTAMP '2026-08-01 09:25:00', 'seller-hash-003', 0);
+('nd-009', 'BNK20260801-900003', 'REC20260801-9004', '01-IDENTITY', '身份核验', '2026-08-01 09:00:00', '2026-08-01 09:02:00', 120000, 1, '2026-08-01 09:02:00', 'seller-hash-003', 0),
+('nd-010', 'BNK20260801-900003', 'REC20260801-9004', '02-DISCLOSURE', '风险揭示', '2026-08-01 09:02:00', '2026-08-01 09:08:00', 360000, 1, '2026-08-01 09:08:00', 'seller-hash-003', 0),
+('nd-011', 'BNK20260801-900003', 'REC20260801-9004', '03-PRODUCT', '产品展示', '2026-08-01 09:08:00', '2026-08-01 09:18:00', 600000, 1, '2026-08-01 09:18:00', 'seller-hash-003', 0),
+('nd-012', 'BNK20260801-900003', 'REC20260801-9004', '04-RIGHTS', '权利义务', '2026-08-01 09:18:00', '2026-08-01 09:22:00', 240000, 1, '2026-08-01 09:22:00', 'seller-hash-003', 0),
+('nd-013', 'BNK20260801-900003', 'REC20260801-9004', '05-TRUTH_TELL', '如实告知', '2026-08-01 09:22:00', '2026-08-01 09:25:00', 180000, 1, '2026-08-01 09:25:00', 'seller-hash-003', 0);
 
 -- 7. 质检结果 1 笔 (biz-001)
 INSERT INTO tb_qa_result (id, qa_id, rec_id, business_id, checker_type, ai_model_version, ai_qa_score, ai_qa_result, issues_json, human_reviewer_id, human_review_status, rectification_status, check_time, `deleted`) VALUES
 ('qa-001', 'QA20260720-0001', 'REC20260801-9001', 'BNK20260801-900001', 'AI_PLUS_HUMAN', 'qa-llm-v3.2.0', 92.50, 'PASS_WITH_FINDINGS',
  '[{"type":"LATE_DISCLOSURE","severity":"LOW","nodeId":"02-DISCLOSURE","regulation":"金发8号-第二十一条"}]',
- 'auditor-001', 'CONFIRMED', 'NO_NEED', TIMESTAMP '2026-07-20 10:50:00', 0);
+ 'auditor-001', 'CONFIRMED', 'NO_NEED', '2026-07-20 10:50:00', 0);
 
 -- 8. 事件流 (biz-001 完整状态机轨迹)
 INSERT INTO tb_event (id, business_id, event_type, from_state, to_state, actor_id, actor_type, event_data, created_at) VALUES
-('evt-001', 'BNK20260801-900001', 'STATE_TRANSITION', NULL, 'INIT', 'SYSTEM', 'SYSTEM', '{"reason":"BUSINESS_CREATED"}', TIMESTAMP '2026-07-20 10:00:00'),
-('evt-002', 'BNK20260801-900001', 'STATE_TRANSITION', 'INIT', 'RISK_ASSESSED', 'SYSTEM', 'SYSTEM', '{"reason":"Risk assessed: C1"}', TIMESTAMP '2026-07-20 10:00:30'),
-('evt-003', 'BNK20260801-900001', 'STATE_TRANSITION', 'RISK_ASSESSED', 'SCRIPT_LOADED', 'SYSTEM', 'SYSTEM', '{"reason":"Script loaded"}', TIMESTAMP '2026-07-20 10:00:45'),
-('evt-004', 'BNK20260801-900001', 'STATE_TRANSITION', 'SCRIPT_LOADED', 'RECORDING', 'SYSTEM', 'SYSTEM', '{"reason":"Recording started"}', TIMESTAMP '2026-07-20 10:01:00'),
-('evt-005', 'BNK20260801-900001', 'NODE_COMPLETED', 'RECORDING', 'RECORDING', 'SYSTEM', 'SYSTEM', '{"node":"01-IDENTITY","duration":120000}', TIMESTAMP '2026-07-20 10:02:00'),
-('evt-006', 'BNK20260801-900001', 'NODE_COMPLETED', 'RECORDING', 'RECORDING', 'SYSTEM', 'SYSTEM', '{"node":"02-DISCLOSURE","duration":360000}', TIMESTAMP '2026-07-20 10:08:00'),
-('evt-007', 'BNK20260801-900001', 'NODE_COMPLETED', 'RECORDING', 'RECORDING', 'SYSTEM', 'SYSTEM', '{"node":"03-PRODUCT","duration":600000}', TIMESTAMP '2026-07-20 10:18:00'),
-('evt-008', 'BNK20260801-900001', 'NODE_COMPLETED', 'RECORDING', 'RECORDING', 'SYSTEM', 'SYSTEM', '{"node":"04-RIGHTS","duration":240000}', TIMESTAMP '2026-07-20 10:22:00'),
-('evt-009', 'BNK20260801-900001', 'NODE_COMPLETED', 'RECORDING', 'RECORDING', 'SYSTEM', 'SYSTEM', '{"node":"05-TRUTH_TELL","duration":360000}', TIMESTAMP '2026-07-20 10:28:00'),
-('evt-010', 'BNK20260801-900001', 'NODE_COMPLETED', 'RECORDING', 'RECORDING', 'SYSTEM', 'SYSTEM', '{"node":"06-CONFIRM","duration":300000,"affirmative":true}', TIMESTAMP '2026-07-20 10:33:00'),
-('evt-011', 'BNK20260801-900001', 'NODE_COMPLETED', 'RECORDING', 'RECORDING', 'SYSTEM', 'SYSTEM', '{"node":"07-SIGN","duration":300000}', TIMESTAMP '2026-07-20 10:38:00'),
-('evt-012', 'BNK20260801-900001', 'NODE_COMPLETED', 'RECORDING', 'RECORDING', 'SYSTEM', 'SYSTEM', '{"node":"08-FOLLOWUP","duration":420000}', TIMESTAMP '2026-07-20 10:45:00'),
-('evt-013', 'BNK20260801-900001', 'STATE_TRANSITION', 'RECORDING', 'RECORDED', 'SYSTEM', 'SYSTEM', '{"reason":"All nodes completed"}', TIMESTAMP '2026-07-20 10:45:00'),
-('evt-014', 'BNK20260801-900001', 'STATE_TRANSITION', 'RECORDED', 'AI_QA', 'SYSTEM', 'SYSTEM', '{"reason":"AI QA started"}', TIMESTAMP '2026-07-20 10:45:30'),
-('evt-015', 'BNK20260801-900001', 'STATE_TRANSITION', 'AI_QA', 'AI_QA_PASSED', 'SYSTEM', 'SYSTEM', '{"reason":"AI QA passed: PASS_WITH_FINDINGS","score":92.5}', TIMESTAMP '2026-07-20 10:50:00'),
-('evt-016', 'BNK20260801-900001', 'STATE_TRANSITION', 'AI_QA_PASSED', 'SIGNED', 'customer-hash-001', 'CUSTOMER', '{"reason":"Customer signed"}', TIMESTAMP '2026-07-20 10:55:00'),
-('evt-017', 'BNK20260801-900001', 'STATE_TRANSITION', 'SIGNED', 'ARCHIVED', 'SYSTEM', 'SYSTEM', '{"reason":"Archived"}', TIMESTAMP '2026-07-20 10:55:30'),
+('evt-001', 'BNK20260801-900001', 'STATE_TRANSITION', NULL, 'INIT', 'SYSTEM', 'SYSTEM', '{"reason":"BUSINESS_CREATED"}', '2026-07-20 10:00:00'),
+('evt-002', 'BNK20260801-900001', 'STATE_TRANSITION', 'INIT', 'RISK_ASSESSED', 'SYSTEM', 'SYSTEM', '{"reason":"Risk assessed: C1"}', '2026-07-20 10:00:30'),
+('evt-003', 'BNK20260801-900001', 'STATE_TRANSITION', 'RISK_ASSESSED', 'SCRIPT_LOADED', 'SYSTEM', 'SYSTEM', '{"reason":"Script loaded"}', '2026-07-20 10:00:45'),
+('evt-004', 'BNK20260801-900001', 'STATE_TRANSITION', 'SCRIPT_LOADED', 'RECORDING', 'SYSTEM', 'SYSTEM', '{"reason":"Recording started"}', '2026-07-20 10:01:00'),
+('evt-005', 'BNK20260801-900001', 'NODE_COMPLETED', 'RECORDING', 'RECORDING', 'SYSTEM', 'SYSTEM', '{"node":"01-IDENTITY","duration":120000}', '2026-07-20 10:02:00'),
+('evt-006', 'BNK20260801-900001', 'NODE_COMPLETED', 'RECORDING', 'RECORDING', 'SYSTEM', 'SYSTEM', '{"node":"02-DISCLOSURE","duration":360000}', '2026-07-20 10:08:00'),
+('evt-007', 'BNK20260801-900001', 'NODE_COMPLETED', 'RECORDING', 'RECORDING', 'SYSTEM', 'SYSTEM', '{"node":"03-PRODUCT","duration":600000}', '2026-07-20 10:18:00'),
+('evt-008', 'BNK20260801-900001', 'NODE_COMPLETED', 'RECORDING', 'RECORDING', 'SYSTEM', 'SYSTEM', '{"node":"04-RIGHTS","duration":240000}', '2026-07-20 10:22:00'),
+('evt-009', 'BNK20260801-900001', 'NODE_COMPLETED', 'RECORDING', 'RECORDING', 'SYSTEM', 'SYSTEM', '{"node":"05-TRUTH_TELL","duration":360000}', '2026-07-20 10:28:00'),
+('evt-010', 'BNK20260801-900001', 'NODE_COMPLETED', 'RECORDING', 'RECORDING', 'SYSTEM', 'SYSTEM', '{"node":"06-CONFIRM","duration":300000,"affirmative":true}', '2026-07-20 10:33:00'),
+('evt-011', 'BNK20260801-900001', 'NODE_COMPLETED', 'RECORDING', 'RECORDING', 'SYSTEM', 'SYSTEM', '{"node":"07-SIGN","duration":300000}', '2026-07-20 10:38:00'),
+('evt-012', 'BNK20260801-900001', 'NODE_COMPLETED', 'RECORDING', 'RECORDING', 'SYSTEM', 'SYSTEM', '{"node":"08-FOLLOWUP","duration":420000}', '2026-07-20 10:45:00'),
+('evt-013', 'BNK20260801-900001', 'STATE_TRANSITION', 'RECORDING', 'RECORDED', 'SYSTEM', 'SYSTEM', '{"reason":"All nodes completed"}', '2026-07-20 10:45:00'),
+('evt-014', 'BNK20260801-900001', 'STATE_TRANSITION', 'RECORDED', 'AI_QA', 'SYSTEM', 'SYSTEM', '{"reason":"AI QA started"}', '2026-07-20 10:45:30'),
+('evt-015', 'BNK20260801-900001', 'STATE_TRANSITION', 'AI_QA', 'AI_QA_PASSED', 'SYSTEM', 'SYSTEM', '{"reason":"AI QA passed: PASS_WITH_FINDINGS","score":92.5}', '2026-07-20 10:50:00'),
+('evt-016', 'BNK20260801-900001', 'STATE_TRANSITION', 'AI_QA_PASSED', 'SIGNED', 'customer-hash-001', 'CUSTOMER', '{"reason":"Customer signed"}', '2026-07-20 10:55:00'),
+('evt-017', 'BNK20260801-900001', 'STATE_TRANSITION', 'SIGNED', 'ARCHIVED', 'SYSTEM', 'SYSTEM', '{"reason":"Archived"}', '2026-07-20 10:55:30'),
 
 -- biz-004 失败事件
-('evt-018', 'FND20260801-900004', 'STATE_TRANSITION', NULL, 'INIT', 'SYSTEM', 'SYSTEM', '{"reason":"BUSINESS_CREATED"}', TIMESTAMP '2026-08-01 10:00:00'),
-('evt-019', 'FND20260801-900004', 'STATE_TRANSITION', 'INIT', 'RISK_ASSESSED', 'SYSTEM', 'SYSTEM', '{"reason":"Risk assessed: C3"}', TIMESTAMP '2026-08-01 10:00:30'),
-('evt-020', 'FND20260801-900004', 'STATE_TRANSITION', 'RISK_ASSESSED', 'SCRIPT_LOADED', 'SYSTEM', 'SYSTEM', '{"reason":"Script loaded"}', TIMESTAMP '2026-08-01 10:01:00'),
-('evt-021', 'FND20260801-900004', 'STATE_TRANSITION', 'SCRIPT_LOADED', 'RECORDING', 'SYSTEM', 'SYSTEM', '{"reason":"Recording started"}', TIMESTAMP '2026-08-01 10:01:30'),
-('evt-022', 'FND20260801-900004', 'NODE_COMPLETED', 'RECORDING', 'RECORDING', 'SYSTEM', 'SYSTEM', '{"node":"01-IDENTITY","duration":120000}', TIMESTAMP '2026-08-01 10:03:30'),
-('evt-023', 'FND20260801-900004', 'FORBIDDEN_PHRASE_HIT', 'RECORDING', 'FAILED', 'SYSTEM', 'SYSTEM', '{"phrase":"保本","severity":"HIGH","regulation":"金发8号-第二十一条","action":"NODE_FAILED"}', TIMESTAMP '2026-08-01 10:15:00'),
-('evt-024', 'FND20260801-900004', 'STATE_TRANSITION', 'RECORDING', 'FAILED', 'system', 'SYSTEM', '{"reason":"MANUAL: FORBIDDEN_PHRASE_HIT (高风险客户买高风险产品, 数字人触发禁播词阻断)"}', TIMESTAMP '2026-08-01 10:15:00'),
+('evt-018', 'FND20260801-900004', 'STATE_TRANSITION', NULL, 'INIT', 'SYSTEM', 'SYSTEM', '{"reason":"BUSINESS_CREATED"}', '2026-08-01 10:00:00'),
+('evt-019', 'FND20260801-900004', 'STATE_TRANSITION', 'INIT', 'RISK_ASSESSED', 'SYSTEM', 'SYSTEM', '{"reason":"Risk assessed: C3"}', '2026-08-01 10:00:30'),
+('evt-020', 'FND20260801-900004', 'STATE_TRANSITION', 'RISK_ASSESSED', 'SCRIPT_LOADED', 'SYSTEM', 'SYSTEM', '{"reason":"Script loaded"}', '2026-08-01 10:01:00'),
+('evt-021', 'FND20260801-900004', 'STATE_TRANSITION', 'SCRIPT_LOADED', 'RECORDING', 'SYSTEM', 'SYSTEM', '{"reason":"Recording started"}', '2026-08-01 10:01:30'),
+('evt-022', 'FND20260801-900004', 'NODE_COMPLETED', 'RECORDING', 'RECORDING', 'SYSTEM', 'SYSTEM', '{"node":"01-IDENTITY","duration":120000}', '2026-08-01 10:03:30'),
+('evt-023', 'FND20260801-900004', 'FORBIDDEN_PHRASE_HIT', 'RECORDING', 'FAILED', 'SYSTEM', 'SYSTEM', '{"phrase":"保本","severity":"HIGH","regulation":"金发8号-第二十一条","action":"NODE_FAILED"}', '2026-08-01 10:15:00'),
+('evt-024', 'FND20260801-900004', 'STATE_TRANSITION', 'RECORDING', 'FAILED', 'system', 'SYSTEM', '{"reason":"MANUAL: FORBIDDEN_PHRASE_HIT (高风险客户买高风险产品, 数字人触发禁播词阻断)"}', '2026-08-01 10:15:00'),
 
 -- 犹豫期回访事件 (biz-001 业务)
-('evt-025', 'BNK20260801-900001', 'SCHEDULED_FOLLOW_UP', 'ARCHIVED', 'ARCHIVED', 'SYSTEM', 'SYSTEM', '{"phase":"D+1","day":1,"scheduled_at":"2026-07-21","template":"保单摘要推送"}', TIMESTAMP '2026-07-20 10:55:30');
+('evt-025', 'BNK20260801-900001', 'SCHEDULED_FOLLOW_UP', 'ARCHIVED', 'ARCHIVED', 'SYSTEM', 'SYSTEM', '{"phase":"D+1","day":1,"scheduled_at":"2026-07-21","template":"保单摘要推送"}', '2026-07-20 10:55:30');
 
 -- 9. 证据保全记录 2 笔 (rec-002 + rec-003 已公证)
 INSERT INTO tb_preservation_record (id, preservation_id, rec_id, business_id, requester_id, requester_role, reason, notary_org, notary_cert_no, preserved_at, preservation_hash, file_sha256, expires_at, `status`, created_at) VALUES
-('pr-001', 'PR-20260801-001', 'REC20260801-9002', 'LIC20260801-900001', 'auditor-001', 'AUDITOR', '客户投诉进入司法程序', '北京公证处', 'GZ-2026-001', TIMESTAMP '2026-07-26 09:00:00',
+('pr-001', 'PR-20260801-001', 'REC20260801-9002', 'LIC20260801-900001', 'auditor-001', 'AUDITOR', '客户投诉进入司法程序', '北京公证处', 'GZ-2026-001', '2026-07-26 09:00:00',
  'sha256hash1-001', 'b2c4e6f8a3f5d2e8b2c4e6f8a3f5d2e8b2c4e6f8a3f5d2e8b2c4e6f8a3f5d2e8',
- TIMESTAMP '2031-07-26', 'NOTARIZED', TIMESTAMP '2026-07-25 18:00:00'),
+ '2031-07-26', 'NOTARIZED', '2026-07-25 18:00:00'),
 
-('pr-002', 'PR-20260801-002', 'REC20260801-9003', 'LIC20260801-900001', 'auditor-001', 'AUDITOR', '客户投诉进入司法程序 (数字人段)', '北京公证处', 'GZ-2026-002', TIMESTAMP '2026-07-26 09:30:00',
+('pr-002', 'PR-20260801-002', 'REC20260801-9003', 'LIC20260801-900001', 'auditor-001', 'AUDITOR', '客户投诉进入司法程序 (数字人段)', '北京公证处', 'GZ-2026-002', '2026-07-26 09:30:00',
  'sha256hash2-001', 'c3d4e5f6a7b8c9d0c3d4e5f6a7b8c9d0c3d4e5f6a7b8c9d0c3d4e5f6a7b8c9d0',
- TIMESTAMP '2031-07-26', 'NOTARIZED', TIMESTAMP '2026-07-25 18:30:00');
+ '2031-07-26', 'NOTARIZED', '2026-07-25 18:30:00');
