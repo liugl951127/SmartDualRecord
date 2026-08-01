@@ -98,7 +98,7 @@ CREATE TABLE tb_recording_annotation (
     INDEX idx_ann_rec (rec_id),
     INDEX idx_ann_biz (business_id),
     INDEX idx_ann_type (annotation_type)
-);
+    deleted         TINYINT NOT NULL DEFAULT 0,);
 
 -- ---------- 2.2 录像访问审计日志 (谁看了 + 多久 + 操作) ----------
 DROP TABLE IF EXISTS tb_recording_access_log;
@@ -116,7 +116,7 @@ CREATE TABLE tb_recording_access_log (
     INDEX idx_audit_rec (rec_id),
     INDEX idx_audit_user (user_id),
     INDEX idx_audit_time (accessed_at)
-);
+    deleted         TINYINT NOT NULL DEFAULT 0,);
 
 -- ---------- 2.3 断点续传 Session ----------
 DROP TABLE IF EXISTS tb_upload_session;
@@ -138,7 +138,7 @@ CREATE TABLE tb_upload_session (
     INDEX idx_us_sess (session_id),
     INDEX idx_us_biz (business_id),
     INDEX idx_us_status (status)
-);
+    deleted         TINYINT NOT NULL DEFAULT 0,);
 
 -- ---------- 2.4 证据保全记录 (司法/公证) ----------
 DROP TABLE IF EXISTS tb_preservation_record;
@@ -161,7 +161,7 @@ CREATE TABLE tb_preservation_record (
     INDEX idx_pr_rec (rec_id),
     INDEX idx_pr_biz (business_id),
     INDEX idx_pr_status (status)
-);
+    deleted         TINYINT NOT NULL DEFAULT 0,);
 
 -- ---------- 3. 录像节点明细（8 节点各 1 条）----------
 DROP TABLE IF EXISTS tb_rec_node;
@@ -216,7 +216,7 @@ CREATE TABLE tb_event (
     created_at      TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_evt_business (business_id),
     INDEX idx_created (created_at)
-);
+    deleted         TINYINT NOT NULL DEFAULT 0,);
 
 -- ---------- 6. 话术模板表 ----------
 DROP TABLE IF EXISTS tb_script_template;

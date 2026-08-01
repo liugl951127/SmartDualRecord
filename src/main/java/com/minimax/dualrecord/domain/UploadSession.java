@@ -68,4 +68,7 @@ public class UploadSession {
 
     @TableField("expires_at")
     private LocalDateTime expiresAt;
+
+    @TableField("deleted")
+    private Integer deleted;
 }

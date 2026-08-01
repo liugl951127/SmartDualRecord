@@ -57,4 +57,7 @@ public class RecordingAnnotation {
 
     @TableField("created_at")
     private LocalDateTime createdAt;
+
+    @TableField("deleted")
+    private Integer deleted;
 }

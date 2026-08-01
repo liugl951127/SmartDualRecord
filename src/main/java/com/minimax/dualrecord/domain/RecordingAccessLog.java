@@ -63,4 +63,7 @@ public class RecordingAccessLog {
 
     @TableField("accessed_at")
     private LocalDateTime accessedAt;
+
+    @TableField("deleted")
+    private Integer deleted;
 }
