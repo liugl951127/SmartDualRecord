@@ -1,93 +1,121 @@
 <template>
-  <div class="advisor-panel">
-    <div class="page-header">
-      <h1>理财经理工作台</h1>
-      <p>处理客户转接请求 · 在线咨询服务</p>
-    </div>
-
-    <div class="stat-grid">
-      <div class="stat-card">
-        <div class="stat-num">{{ stats.pending }}</div>
-        <div class="stat-label">待接单</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-num">{{ stats.active }}</div>
-        <div class="stat-label">进行中</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-num">{{ stats.today }}</div>
-        <div class="stat-label">今日</div>
-      </div>
-      <div class="stat-card">
-        <div :class="['stat-num', wsConnected ? 'on' : 'off']">
-          {{ wsConnected ? '●' : '○' }}
+  <div class="page-container">
+    <div class="page-header-bar">
+      <div class="page-title-group">
+        <div class="page-icon">💎</div>
+        <div>
+          <h1 class="page-title">理财经理</h1>
+          <div class="page-subtitle">复杂业务转接 + 高净值客户管理</div>
         </div>
-        <div class="stat-label">WebSocket</div>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-ghost" @click="refreshList">↻ 刷新</button>
+        <button class="btn btn-accent" @click="onAccept">✅ 接受下一个</button>
       </div>
     </div>
 
-    <div class="layout">
-      <div class="left">
+    <div class="page-body fade-in">
+      <!-- KPI -->
+      <div class="grid grid-4 mb-12">
+        <div class="stat-box">
+          <div class="stat-icon primary">⏳</div>
+          <div class="stat-value">{{ queue.length }}</div>
+          <div class="stat-label">待接单</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-icon success">✓</div>
+          <div class="stat-value">{{ kpi.handled }}</div>
+          <div class="stat-label">今日已处理</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-icon accent">💰</div>
+          <div class="stat-value mono">¥{{ kpi.amount }}</div>
+          <div class="stat-label">今日成交额</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-icon warning">⭐</div>
+          <div class="stat-value">{{ kpi.rating }}</div>
+          <div class="stat-label">客户评分</div>
+        </div>
+      </div>
+
+      <div class="grid grid-2-1">
+        <!-- 转接队列 -->
         <div class="card">
           <div class="card-header">
-            <h3>📋 待接单 ({{ pendingList.length }})</h3>
+            <h3 class="card-title">🔄 转接队列</h3>
+            <span class="tag tag-info">{{ queue.length }} 待处理</span>
           </div>
-          <div v-if="!pendingList.length" class="empty-tip">
-            <div class="et-icon">📭</div>
-            <p>暂无待接单</p>
-          </div>
-          <div v-else class="pending-list">
-            <div v-for="r in pendingList" :key="r.id" class="pending-card">
-              <div class="pc-header">
-                <div class="pc-customer">👤 {{ r.customer }}</div>
-                <div :class="['reason', `reason-${r.reason}`]">{{ reasonLabel(r.reason) }}</div>
+          <div class="transfer-list">
+            <transition-group name="queue">
+              <div
+                v-for="(q, i) in queue"
+                :key="q.id"
+                :class="['tr-item', `pri-${q.priority}`, q.urgent && 'urgent']"
+              >
+                <div class="tr-rank">{{ i + 1 }}</div>
+                <div class="tr-cust">
+                  <div class="tr-name">
+                    {{ q.customer }}
+                    <span v-if="q.vip" class="tag tag-accent">VIP</span>
+                    <span :class="['tag', `tag-${riskColor(q.risk)}`]">C{{ q.risk }}</span>
+                  </div>
+                  <div class="tr-product mono text-sm text-muted">{{ q.product }} · ¥{{ q.amount }}</div>
+                  <div class="tr-reason text-sm text-secondary">"{{ q.reason }}"</div>
+                </div>
+                <div class="tr-meta">
+                  <div class="tr-from text-sm text-muted">来自 {{ q.fromAgent }}</div>
+                  <div class="tr-time text-sm text-muted">{{ q.waitTime }} 分钟前</div>
+                </div>
+                <div class="tr-actions">
+                  <button class="btn btn-sm btn-success" @click="accept(q)">接受</button>
+                  <button class="btn btn-sm btn-ghost" @click="decline(q)">拒绝</button>
+                </div>
               </div>
-              <div class="pc-desc">{{ r.desc }}</div>
-              <div class="pc-time">{{ r.time }}</div>
-              <div class="pc-actions">
-                <button class="btn btn-accept" @click="onAccept(r)">✓ 接单</button>
-                <button class="btn btn-decline" @click="onDecline(r)">✕ 拒绝</button>
-              </div>
+            </transition-group>
+            <div v-if="!queue.length" class="empty">
+              <div class="empty-icon">🎉</div>
+              <p class="empty-text">队列已清空</p>
             </div>
           </div>
         </div>
 
+        <!-- 我的客户 -->
         <div class="card">
           <div class="card-header">
-            <h3>📊 活跃会话 ({{ activeList.length }})</h3>
+            <h3 class="card-title">⭐ 我的 VIP 客户</h3>
           </div>
-          <div v-if="!activeList.length" class="empty-tip">
-            <div class="et-icon">💼</div>
-            <p>暂无活跃会话</p>
-          </div>
-          <div v-else class="active-list">
-            <div v-for="a in activeList" :key="a.id" :class="['active-card', selectedActive?.id === a.id && 'selected']" @click="selectedActive = a">
-              <div class="ac-customer">👤 {{ a.customer }}</div>
-              <div class="ac-time">{{ a.duration }} · {{ a.lastMsg }}</div>
+          <div class="vip-list">
+            <div v-for="c in vipCustomers" :key="c.id" class="vip-item">
+              <div class="vip-avatar" :style="{ background: avatarColor(c.risk) }">
+                {{ c.name.charAt(0) }}
+              </div>
+              <div class="vip-info">
+                <div class="vip-name">{{ c.name }} <span class="tag tag-accent">VIP{{ c.level }}</span></div>
+                <div class="vip-meta text-sm text-muted">
+                  总资产 ¥{{ c.asset }} · {{ c.products }} 个产品
+                </div>
+              </div>
+              <button class="btn btn-text btn-sm">📞</button>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="right">
-        <div v-if="!selectedActive" class="empty-tip card">
-          <div class="et-icon">💬</div>
-          <p>从左侧选择会话</p>
+      <!-- 转接原因分析 -->
+      <div class="card mt-12">
+        <div class="card-header">
+          <h3 class="card-title">📊 转接原因分析 (本月)</h3>
         </div>
-        <div v-else class="chat-panel card">
-          <div class="chat-header">
-            <div class="ch-customer">👤 {{ selectedActive.customer }}</div>
-            <button class="btn btn-end" @click="onEnd">📞 挂断</button>
-          </div>
-          <div ref="msgListEl" class="chat-messages">
-            <div v-for="m in messages" :key="m.id" :class="['msg', `msg-${m.role}`]">
-              <div class="msg-avatar">{{ m.role === 'customer' ? '👤' : m.role === 'advisor' ? '💎' : '⚙️' }}</div>
-              <div class="msg-bubble">{{ m.text }}</div>
+        <div class="reason-grid">
+          <div v-for="r in reasons" :key="r.label" class="reason-item">
+            <div class="ri-head">
+              <div class="ri-label">{{ r.label }}</div>
+              <div class="ri-val mono">{{ r.count }} <span class="text-sm text-muted">({{ r.percent }}%)</span></div>
             </div>
-          </div>
-          <div class="chat-input">
-            <input v-model="inputText" class="ci-input" placeholder="输入回复..." @keyup.enter="onSend" />
-            <button class="ci-send" @click="onSend">发送</button>
+            <div class="dist-bar-bg mt-4">
+              <div :class="['dist-bar', `bar-${r.color}`]" :style="{ width: r.percent + '%' }"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -96,232 +124,165 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue'
-import { showToast, showDialog } from 'vant'
-import { useWebSocketStore } from '@/stores/ws'
+import { ref } from 'vue'
 
-const ws = useWebSocketStore()
-const wsConnected = computed(() => ws.connected)
-
-const stats = ref({ pending: 3, active: 1, today: 8 })
-
-const pendingList = ref([
-  { id: 'r001', customer: '张志强', reason: 'PRODUCT', desc: '想详细了解固收类理财的收益结构', time: '10:32' },
-  { id: 'r002', customer: '李建国', reason: 'COMPLIANCE', desc: '对风险揭示书有疑问', time: '10:28' },
-  { id: 'r003', customer: '王明华', reason: 'TECH', desc: '摄像头无法启动', time: '10:15' }
+const queue = ref([
+  { id: 'q1', customer: '张志强', product: 'BNK-FIN-2026Q3-001 稳赢 3 号', amount: '500,000', risk: 1, vip: true,
+    reason: '客户要求 50 万大额购买, 请协助', fromAgent: '坐席小李', waitTime: 2, priority: 'high', urgent: true },
+  { id: 'q2', customer: '李雪梅', product: 'STR-DP-2026Q3 结构性存款', amount: '1,000,000', risk: 2, vip: true,
+    reason: '客户对挂钩标的有疑问, 请详细解释', fromAgent: '坐席小王', waitTime: 5, priority: 'high', urgent: false },
+  { id: 'q3', customer: '陈思琪', product: 'INS-FIN-2026 保险理财', amount: '300,000', risk: 2, vip: true,
+    reason: '客户希望了解提前退保条款', fromAgent: '坐席小赵', waitTime: 8, priority: 'mid', urgent: false }
 ])
 
-const activeList = ref([
-  { id: 'a001', customer: '赵晓东', duration: '5 分钟', lastMsg: '收益大概多少?' }
-])
+const kpi = ref({ handled: 12, amount: '4.8M', rating: 4.9 })
 
-const selectedActive = ref<any>(activeList.value[0])
+const vipCustomers = [
+  { id: 'v1', name: '李雪梅', level: 5, risk: 2, asset: '1,250,000', products: 3 },
+  { id: 'v2', name: '刘建国', level: 5, risk: 1, asset: '1,800,000', products: 4 },
+  { id: 'v3', name: '陈思琪', level: 4, risk: 2, asset: '760,000', products: 2 },
+  { id: 'v4', name: '张志强', level: 3, risk: 1, asset: '580,000', products: 3 }
+]
 
-const inputText = ref('')
-const msgListEl = ref<HTMLDivElement>()
+const reasons = [
+  { label: '大额购买 (>= 50万)', count: 8, percent: 40, color: 'accent' },
+  { label: '产品疑问', count: 6, percent: 30, color: 'primary' },
+  { label: '条款咨询', count: 4, percent: 20, color: 'success' },
+  { label: '其他', count: 2, percent: 10, color: 'info' }
+]
 
-const messages = ref([
-  { id: 1, role: 'customer', text: '您好, 我想咨询这个理财产品的具体收益' },
-  { id: 2, role: 'advisor', text: '您好, 我是您的专属理财经理。预期年化 3.6%, 投资期限 180 天。' },
-  { id: 3, role: 'system', text: '已建立服务连接 · 2026-08-01 10:30' },
-  { id: 4, role: 'customer', text: '收益大概多少?' }
-])
-
-function reasonLabel(r: string) {
-  return ({ TECH: '技术问题', PRODUCT: '产品咨询', COMPLIANCE: '合规咨询', OTHER: '其他' } as Record<string, string>)[r] || r
+function riskColor(level: number) {
+  const m: any = { 1: 'success', 2: 'primary', 3: 'warning', 4: 'warning', 5: 'danger' }
+  return m[level] || 'default'
+}
+function avatarColor(level: number) {
+  const colors: any = { 1: '#d1fae5', 2: '#dbeafe', 3: '#fef3c7', 4: '#fed7aa', 5: '#fee2e2' }
+  return colors[level] || '#f0f2f7'
 }
 
-function onAccept(r: any) {
-  pendingList.value = pendingList.value.filter(p => p.id !== r.id)
-  activeList.value.push({ id: 'a' + Date.now(), customer: r.customer, duration: '0 分钟', lastMsg: '会话开始' })
-  selectedActive.value = activeList.value[activeList.value.length - 1]
-  messages.value = [
-    { id: 1, role: 'system', text: `${r.customer} 已接入服务 · 2026-08-01 ${new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}` }
-  ]
-  showToast('已接单')
+function accept(q: any) {
+  alert(`已接受 ${q.customer}, 跳转业务详情`)
+  queue.value = queue.value.filter(x => x.id !== q.id)
 }
-
-function onDecline(r: any) {
-  pendingList.value = pendingList.value.filter(p => p.id !== r.id)
-  showToast('已拒绝')
+function decline(q: any) {
+  alert(`已拒绝 ${q.customer}`)
+  queue.value = queue.value.filter(x => x.id !== q.id)
 }
-
-function onEnd() {
-  showDialog({ title: '结束会话', message: '确认结束当前会话?', showCancelButton: true })
-    .then(() => {
-      activeList.value = activeList.value.filter(a => a.id !== selectedActive.value?.id)
-      selectedActive.value = activeList.value[0] || null
-      showToast('会话已结束')
-    })
-    .catch(() => {})
+function onAccept() {
+  if (queue.value[0]) accept(queue.value[0])
 }
-
-function onSend() {
-  if (!inputText.value.trim()) return
-  messages.value.push({
-    id: Date.now(),
-    role: 'advisor',
-    text: inputText.value
-  })
-  inputText.value = ''
-  nextTick(() => {
-    if (msgListEl.value) {
-      msgListEl.value.scrollTop = msgListEl.value.scrollHeight
-    }
-  })
-  // 模拟客户回复
-  setTimeout(() => {
-    messages.value.push({
-      id: Date.now() + 1,
-      role: 'customer',
-      text: '收到, 谢谢!'
-    })
-  }, 1500)
-}
+function refreshList() { alert('刷新') }
 </script>
 
 <style lang="scss" scoped>
-.advisor-panel { padding: 24px; }
-.page-header { margin-bottom: 16px; h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px; } p { font-size: 13px; color: var(--text-3); margin: 0; } }
+@import '@/styles/agent-theme.scss';
 
-.stat-grid {
+.mb-12 { margin-bottom: 12px; }
+.mt-4 { margin-top: 4px; }
+.mt-12 { margin-top: 12px; }
+
+.grid-2-1 {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: 1.5fr 1fr;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
-.stat-card {
-  background: white;
-  border-radius: 12px;
-  padding: 16px;
-  text-align: center;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-}
-.stat-num {
-  font-size: 28px;
-  font-weight: 700;
-  font-family: 'JetBrains Mono', monospace;
-  color: var(--primary);
-  &.on { color: var(--success); animation: pulse 2s infinite; }
-  &.off { color: var(--text-3); }
-}
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-.stat-label { font-size: 12px; color: var(--text-3); margin-top: 4px; }
+@media (max-width: 1200px) { .grid-2-1 { grid-template-columns: 1fr; } }
 
-.layout {
-  display: grid;
-  grid-template-columns: 360px 1fr;
-  gap: 16px;
-  height: calc(100vh - 200px);
-}
-.left { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
-.right { display: flex; flex-direction: column; }
-.card { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
-.card-header { margin-bottom: 12px; h3 { font-size: 14px; font-weight: 600; margin: 0; } }
-
-.empty-tip { text-align: center; padding: 40px 20px; color: var(--text-3); }
-.et-icon { font-size: 36px; margin-bottom: 8px; opacity: 0.4; }
-
-.pending-list { display: flex; flex-direction: column; gap: 8px; }
-.pending-card {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px;
-}
-.pc-header { display: flex; justify-content: space-between; align-items: center; }
-.pc-customer { font-size: 14px; font-weight: 600; }
-.reason { font-size: 11px; padding: 2px 8px; border-radius: 4px; background: var(--bg); color: var(--text-2); }
-.pc-desc { font-size: 13px; color: var(--text-2); margin: 8px 0 4px; }
-.pc-time { font-size: 11px; color: var(--text-3); font-family: monospace; }
-.pc-actions { display: flex; gap: 8px; margin-top: 8px; }
-
-.btn {
-  flex: 1;
-  padding: 8px;
-  border: 1px solid var(--border);
-  background: white;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
-  &.btn-accept { background: var(--success); color: white; border-color: var(--success); }
-  &.btn-decline { background: var(--bg); color: var(--text-2); }
-  &.btn-end { background: rgba(238,10,36,0.1); color: var(--danger); border-color: rgba(238,10,36,0.2); }
-}
-
-.active-list { display: flex; flex-direction: column; gap: 6px; }
-.active-card {
-  padding: 10px;
-  border-radius: 6px;
-  cursor: pointer;
+// 转接队列
+.transfer-list { padding: 4px 0; max-height: 480px; overflow-y: auto; }
+.tr-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-light);
+  transition: all 0.15s;
+  &.pri-high { border-left: 3px solid var(--danger); padding-left: 13px; }
+  &.pri-mid { border-left: 3px solid var(--warning); padding-left: 13px; }
+  &.pri-low { border-left: 3px solid var(--text-3); padding-left: 13px; }
+  &.urgent {
+    background: rgba(239, 68, 68, 0.03);
+    animation: urgent-flash 2s infinite;
+  }
   &:hover { background: var(--bg); }
-  &.selected { background: rgba(184,134,11,0.1); border: 1px solid var(--accent); }
 }
-.ac-customer { font-size: 14px; font-weight: 500; }
-.ac-time { font-size: 12px; color: var(--text-3); margin-top: 4px; }
+@keyframes urgent-flash {
+  0%, 100% { background: rgba(239, 68, 68, 0.03); }
+  50% { background: rgba(239, 68, 68, 0.08); }
+}
+.tr-rank {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-3);
+  min-width: 20px;
+}
+.tr-cust { flex: 1; min-width: 0; }
+.tr-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-1);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tr-product { margin-top: 2px; }
+.tr-reason {
+  margin-top: 4px;
+  padding: 4px 8px;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  border-left: 2px solid var(--accent);
+  font-style: italic;
+}
+.tr-meta { text-align: right; }
+.tr-actions { display: flex; flex-direction: column; gap: 4px; }
 
-.chat-panel { display: flex; flex-direction: column; height: 100%; padding: 0; }
-.chat-header {
+// VIP 客户
+.vip-list { padding: 4px 0; }
+.vip-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-light);
+  &:last-child { border-bottom: none; }
+  &:hover { background: var(--bg); }
+}
+.vip-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.vip-info { flex: 1; min-width: 0; }
+.vip-name { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+
+// 原因分析
+.reason-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  padding: 16px 20px;
+}
+.ri-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
 }
-.ch-customer { font-size: 15px; font-weight: 600; }
+.ri-label { font-size: 13px; font-weight: 500; color: var(--text-1); }
+.ri-val { font-size: 14px; font-weight: 700; color: var(--text-1); }
+.dist-bar-bg { height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden; }
+.dist-bar { height: 100%; border-radius: 3px; transition: width 0.5s; }
+.bar-primary { background: var(--primary); }
+.bar-accent { background: var(--accent); }
+.bar-success { background: var(--success); }
+.bar-info { background: var(--info); }
 
-.chat-messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px;
-  background: var(--bg);
-}
-.msg { display: flex; gap: 8px; margin-bottom: 12px; }
-.msg-customer { flex-direction: row; }
-.msg-advisor { flex-direction: row-reverse; }
-.msg-system { justify-content: center; }
-.msg-avatar { font-size: 28px; flex-shrink: 0; }
-.msg-bubble {
-  max-width: 60%;
-  padding: 8px 12px;
-  border-radius: 12px;
-  font-size: 13px;
-  line-height: 1.4;
-}
-.msg-customer .msg-bubble { background: white; }
-.msg-advisor .msg-bubble { background: var(--primary); color: white; }
-.msg-system .msg-bubble {
-  background: var(--bg);
-  color: var(--text-3);
-  font-size: 12px;
-  padding: 4px 12px;
-  border: 1px solid var(--border);
-}
-
-.chat-input {
-  display: flex;
-  padding: 12px 16px;
-  border-top: 1px solid var(--border);
-  gap: 8px;
-}
-.ci-input {
-  flex: 1;
-  padding: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font-size: 14px;
-  font-family: inherit;
-  &:focus { outline: none; border-color: var(--accent); }
-}
-.ci-send {
-  padding: 8px 16px;
-  background: var(--primary);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-}
+.queue-enter-active, .queue-leave-active { transition: all 0.3s; }
+.queue-enter-from { opacity: 0; transform: translateX(-20px); }
+.queue-leave-to { opacity: 0; }
 </style>
