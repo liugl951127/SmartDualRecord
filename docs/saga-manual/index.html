@@ -10,37 +10,37 @@
 <style>
 /* ============== v2 主题 ============== */
 :root {
-  --bg-warm: #f0ebe1;
-  --bg-paper: #fbf8f2;
+  --bg-page: #ffffff;
+  --bg-paper: #f7f8fa;
   --bg-card: #ffffff;
+  --bg-soft: #f3f5f8;
   --ink-900: #1e2a47;          /* 钢蓝深空 */
   --ink-700: #2d3a5c;
   --ink-500: #4a5775;
   --ink-300: #8a93a8;
-  --ink-100: #d6dbe5;
+  --ink-100: #e6e9f0;
   --rose: #c08552;             /* 玫瑰金 */
   --rose-soft: #d6a785;
   --rose-deep: #9c6a3e;
-  --gold: #d4a574;             /* 暖金 (辅) */
   --green: #4a8c5e;            /* 通过 */
-  --green-soft: #e6f0e9;
+  --green-soft: #e8f1ea;
   --red: #b04a3e;              /* 失败 */
-  --red-soft: #f5e1de;
+  --red-soft: #f5e6e3;
   --blue: #3a6b8a;             /* 补偿中 */
-  --blue-soft: #dfeaf0;
-  --gray-soft: #ebe7de;
-  --shadow-sm: 0 2px 8px rgba(30,42,71,0.06);
-  --shadow-md: 0 8px 24px rgba(30,42,71,0.10);
-  --shadow-lg: 0 20px 50px rgba(30,42,71,0.14);
+  --blue-soft: #e2ebf1;
+  --gray-soft: #eef0f3;
+  --shadow-sm: 0 1px 3px rgba(30,42,71,0.06), 0 1px 2px rgba(30,42,71,0.04);
+  --shadow-md: 0 4px 12px rgba(30,42,71,0.08);
+  --shadow-lg: 0 12px 32px rgba(30,42,71,0.10);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { background: var(--bg-warm); color: var(--ink-900); font-family: 'Outfit', 'Noto Sans SC', sans-serif; line-height: 1.6; }
+html, body { background: var(--bg-page); color: var(--ink-900); font-family: 'Outfit', 'Noto Sans SC', sans-serif; line-height: 1.6; }
 
 /* ============== 布局 ============== */
 .app { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
 .sidebar { background: var(--ink-900); color: #d6dbe5; padding: 32px 24px; position: sticky; top: 0; height: 100vh; overflow-y: auto; box-shadow: var(--shadow-md); }
-.sidebar-brand { font-family: 'DM Serif Display', serif; font-size: 28px; color: var(--rose); margin-bottom: 4px; }
+.sidebar-brand { font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 600; color: #fff; margin-bottom: 4px; letter-spacing: 0.02em; }
 .sidebar-sub { font-size: 12px; color: var(--ink-300); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 32px; }
 .nav-list { list-style: none; }
 .nav-item { padding: 10px 12px; border-radius: 8px; cursor: pointer; font-size: 14px; margin-bottom: 2px; transition: all 0.2s; }
@@ -50,40 +50,40 @@ html, body { background: var(--bg-warm); color: var(--ink-900); font-family: 'Ou
 .sidebar-foot { position: absolute; bottom: 24px; left: 24px; right: 24px; font-size: 11px; color: var(--ink-300); border-top: 1px solid rgba(255,255,255,0.1); padding-top: 16px; }
 
 .main { padding: 48px 64px; max-width: 1280px; }
-.hero { background: linear-gradient(135deg, var(--ink-900) 0%, #2a3a5a 100%); color: #fff; padding: 48px 40px; border-radius: 16px; margin-bottom: 40px; position: relative; overflow: hidden; box-shadow: var(--shadow-lg); }
-.hero::before { content: ''; position: absolute; right: -100px; top: -100px; width: 360px; height: 360px; background: var(--rose); border-radius: 50%; opacity: 0.12; filter: blur(60px); }
+.hero { background: var(--ink-900); color: #fff; padding: 48px 40px; border-radius: 12px; margin-bottom: 40px; box-shadow: var(--shadow-md); border: 1px solid rgba(255,255,255,0.05); }
+.hero::before { display: none; }
 .hero-eyebrow { font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--rose-soft); margin-bottom: 12px; }
 .hero-title { font-family: 'DM Serif Display', serif; font-size: 44px; line-height: 1.15; margin-bottom: 16px; }
 .hero-title em { color: var(--rose); font-style: normal; }
 .hero-sub { font-size: 16px; color: #c8cdd9; max-width: 720px; }
 .hero-meta { display: flex; gap: 24px; margin-top: 24px; font-size: 13px; }
 .hero-meta div { display: flex; align-items: center; gap: 6px; }
-.hero-meta-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--rose); }
+.hero-meta-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--rose); }
 
 section { margin-bottom: 56px; }
 .sec-title { font-family: 'DM Serif Display', serif; font-size: 28px; color: var(--ink-900); margin-bottom: 8px; }
 .sec-eyebrow { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--rose); margin-bottom: 4px; font-weight: 600; }
 .sec-sub { font-size: 14px; color: var(--ink-500); margin-bottom: 24px; }
 
-.card { background: var(--bg-card); border-radius: 12px; padding: 28px; box-shadow: var(--shadow-sm); margin-bottom: 24px; border: 1px solid rgba(30,42,71,0.04); }
+.card { background: var(--bg-card); border-radius: 8px; padding: 28px; box-shadow: var(--shadow-sm); margin-bottom: 24px; border: 1px solid var(--ink-100); }
 .card-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
 .card-title::before { content: ''; width: 3px; height: 18px; background: var(--rose); border-radius: 2px; }
 .card-sub { font-size: 13px; color: var(--ink-500); margin-bottom: 20px; }
 
 /* ============== 步骤流 ============== */
-.flow-stage { background: var(--bg-card); border-radius: 12px; padding: 32px; box-shadow: var(--shadow-sm); border: 1px solid rgba(30,42,71,0.04); margin-bottom: 32px; }
+.flow-stage { background: var(--bg-card); border-radius: 8px; padding: 32px; box-shadow: var(--shadow-sm); border: 1px solid var(--ink-100); margin-bottom: 32px; }
 .flow-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; position: relative; }
-.flow-step { background: var(--bg-paper); border: 2px solid var(--ink-100); border-radius: 10px; padding: 20px 16px; position: relative; transition: all 0.3s; cursor: pointer; }
+.flow-step { background: var(--bg-card); border: 1px solid var(--ink-100); border-radius: 6px; padding: 20px 16px; position: relative; transition: all 0.3s; cursor: pointer; }
 .flow-step:hover { border-color: var(--rose); transform: translateY(-2px); box-shadow: var(--shadow-md); }
 .flow-step.completed { border-color: var(--green); background: var(--green-soft); }
 .flow-step.failed { border-color: var(--red); background: var(--red-soft); }
 .flow-step.compensated { border-color: var(--blue); background: var(--blue-soft); }
-.flow-step.running { border-color: var(--rose); background: #fef5ee; }
-.flow-step-num { width: 28px; height: 28px; border-radius: 50%; background: var(--ink-900); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 13px; margin-bottom: 12px; }
-.flow-step.completed .flow-step-num { background: var(--green); }
-.flow-step.failed .flow-step-num { background: var(--red); }
-.flow-step.compensated .flow-step-num { background: var(--blue); }
-.flow-step.running .flow-step-num { background: var(--rose); animation: pulse 1.5s infinite; }
+.flow-step.running { border-color: var(--rose); background: var(--bg-soft); }
+.flow-step-num { width: 26px; height: 26px; border-radius: 4px; background: var(--ink-100); color: var(--ink-700); display: flex; align-items: center; justify-content: center; font-weight: 500; font-size: 12px; margin-bottom: 12px; font-family: 'JetBrains Mono', monospace; }
+.flow-step.completed .flow-step-num { background: var(--green-soft); color: var(--green); }
+.flow-step.failed .flow-step-num { background: var(--red-soft); color: var(--red); }
+.flow-step.compensated .flow-step-num { background: var(--blue-soft); color: var(--blue); }
+.flow-step.running .flow-step-num { background: var(--rose); color: #fff; }
 @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(192,133,82,0.5); } 50% { box-shadow: 0 0 0 12px rgba(192,133,82,0); } }
 .flow-step-name { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
 .flow-step-method { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--ink-500); margin-bottom: 8px; line-height: 1.4; }
@@ -99,18 +99,14 @@ section { margin-bottom: 56px; }
 
 /* ============== KPI 卡片 ============== */
 .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
-.kpi { background: var(--bg-card); border-radius: 12px; padding: 24px; box-shadow: var(--shadow-sm); border: 1px solid rgba(30,42,71,0.04); position: relative; overflow: hidden; }
-.kpi::before { content: ''; position: absolute; right: -30px; top: -30px; width: 80px; height: 80px; border-radius: 50%; opacity: 0.08; }
-.kpi.kpi-completed::before { background: var(--green); }
-.kpi.kpi-failed::before { background: var(--red); }
-.kpi.kpi-running::before { background: var(--rose); }
-.kpi.kpi-total::before { background: var(--ink-900); }
+.kpi { background: var(--bg-card); border-radius: 8px; padding: 22px 24px; box-shadow: var(--shadow-sm); border: 1px solid var(--ink-100); }
+.kpi::before { display: none; }
 .kpi-label { font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink-300); margin-bottom: 8px; font-weight: 600; }
 .kpi-value { font-family: 'DM Serif Display', serif; font-size: 36px; color: var(--ink-900); line-height: 1; }
 .kpi-foot { font-size: 11px; color: var(--ink-500); margin-top: 6px; }
 
 /* ============== 代码 ============== */
-.code-block { background: #1a2238; color: #e0e6f0; border-radius: 10px; padding: 20px 24px; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.7; overflow-x: auto; margin: 16px 0; border: 1px solid rgba(255,255,255,0.05); }
+.code-block { background: #1a2238; color: #e0e6f0; border-radius: 6px; padding: 20px 24px; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.7; overflow-x: auto; margin: 16px 0; }
 .code-block .k { color: #c08552; }   /* keyword */
 .code-block .s { color: #b8d4a3; }   /* string */
 .code-block .c { color: #6c7a93; font-style: italic; }   /* comment */
@@ -124,10 +120,10 @@ section { margin-bottom: 56px; }
 .tbl td { padding: 10px 14px; border-bottom: 1px solid var(--ink-100); }
 .tbl tr:hover { background: var(--bg-paper); }
 .tbl .num { font-family: 'JetBrains Mono', monospace; color: var(--ink-500); }
-.badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10.5px; font-weight: 600; letter-spacing: 0.04em; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10.5px; font-weight: 500; letter-spacing: 0.04em; font-family: 'JetBrains Mono', monospace; }
 .badge-ok { background: var(--green-soft); color: var(--green); }
 .badge-err { background: var(--red-soft); color: var(--red); }
-.badge-warn { background: #fef0d9; color: #b48a3e; }
+.badge-warn { background: var(--bg-soft); color: var(--ink-700); }
 .badge-info { background: var(--blue-soft); color: var(--blue); }
 .badge-pending { background: var(--gray-soft); color: var(--ink-500); }
 
@@ -135,8 +131,8 @@ section { margin-bottom: 56px; }
 .case { background: var(--bg-card); border-radius: 12px; padding: 0; box-shadow: var(--shadow-sm); margin-bottom: 24px; border: 1px solid rgba(30,42,71,0.04); overflow: hidden; }
 .case-head { padding: 20px 28px; border-bottom: 1px solid var(--ink-100); display: flex; justify-content: space-between; align-items: center; }
 .case-title { font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
-.case-num { width: 28px; height: 28px; background: var(--ink-900); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; }
-.case-status { font-family: 'JetBrains Mono', monospace; font-size: 12px; padding: 4px 12px; border-radius: 20px; font-weight: 600; }
+.case-num { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-300); font-weight: 500; letter-spacing: 0.1em; padding-right: 10px; border-right: 1px solid var(--ink-100); }
+.case-status { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; padding: 4px 10px; border-radius: 4px; font-weight: 500; letter-spacing: 0.04em; }
 .case-body { padding: 24px 28px; }
 
 /* 时间线 */
@@ -153,11 +149,11 @@ section { margin-bottom: 56px; }
 .tl-msg { font-size: 12.5px; color: var(--ink-700); margin-top: 2px; }
 
 /* ============== 架构图 ============== */
-.arch-svg { width: 100%; height: 480px; background: var(--bg-paper); border-radius: 12px; padding: 16px; }
+.arch-svg { width: 100%; height: 480px; background: var(--bg-soft); border-radius: 6px; padding: 16px; }
 
 /* ============== 状态机 ============== */
 .state-machine { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; align-items: center; margin: 24px 0; }
-.state { background: var(--bg-card); border: 2px solid var(--ink-100); border-radius: 10px; padding: 16px 8px; text-align: center; transition: all 0.3s; }
+.state { background: var(--bg-card); border: 1px solid var(--ink-100); border-radius: 6px; padding: 16px 8px; text-align: center; transition: all 0.3s; }
 .state.pending { border-color: var(--ink-300); }
 .state.running { border-color: var(--rose); background: #fef5ee; }
 .state.completed { border-color: var(--green); background: var(--green-soft); }
@@ -178,19 +174,19 @@ section { margin-bottom: 56px; }
 
 /* ============== How-to 步骤 ============== */
 .howto { counter-reset: step; }
-.howto-item { padding: 20px 0 20px 64px; position: relative; border-left: 2px solid var(--ink-100); margin-left: 12px; }
-.howto-item::before { counter-increment: step; content: counter(step); position: absolute; left: -16px; top: 16px; width: 32px; height: 32px; background: var(--ink-900); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'DM Serif Display', serif; font-size: 16px; }
-.howto-item.done::before { background: var(--green); }
+.howto-item { padding: 20px 0 20px 36px; position: relative; border-left: 1px solid var(--ink-100); margin-left: 8px; }
+.howto-item::before { counter-increment: step; content: counter(step, decimal-leading-zero); position: absolute; left: -2px; top: 18px; transform: translateX(-50%); width: 24px; height: 24px; background: var(--bg-page); border: 1px solid var(--ink-300); color: var(--ink-500); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 500; }
+.howto-item.done::before { background: var(--ink-900); border-color: var(--ink-900); color: #fff; }
 .howto-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
 .howto-desc { font-size: 13.5px; color: var(--ink-500); margin-bottom: 10px; }
 .howto-action { font-family: 'JetBrains Mono', monospace; font-size: 12px; background: var(--bg-paper); padding: 8px 12px; border-radius: 6px; border-left: 3px solid var(--rose); color: var(--ink-700); }
 
 /* ============== Callout ============== */
-.callout { background: linear-gradient(135deg, #fef5ee 0%, #fef0e0 100%); border-left: 4px solid var(--rose); padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 13.5px; color: var(--ink-700); }
-.callout strong { color: var(--rose-deep); }
-.callout-blue { background: linear-gradient(135deg, #dfeaf0 0%, #e8f0f5 100%); border-left-color: var(--blue); }
-.callout-green { background: linear-gradient(135deg, var(--green-soft) 0%, #eff5f0 100%); border-left-color: var(--green); }
-.callout-red { background: linear-gradient(135deg, var(--red-soft) 0%, #f5e9e6 100%); border-left-color: var(--red); }
+.callout { background: var(--bg-soft); border-left: 3px solid var(--ink-300); padding: 14px 20px; border-radius: 0 6px 6px 0; margin: 16px 0; font-size: 13.5px; color: var(--ink-700); }
+.callout strong { color: var(--ink-900); }
+.callout-blue { border-left-color: var(--blue); }
+.callout-green { border-left-color: var(--green); }
+.callout-red { border-left-color: var(--red); }
 
 /* 响应式 */
 @media (max-width: 1024px) {
@@ -328,9 +324,9 @@ section { margin-bottom: 56px; }
           <line x1="40" y1="210" x2="960" y2="210" stroke="#d6dbe5" stroke-width="1"/>
 
           <g>
-            <rect x="60" y="240" width="180" height="120" rx="8" fill="#fbf8f2" stroke="#1e2a47" stroke-width="1.5"/>
-            <circle cx="85" cy="265" r="14" fill="#1e2a47"/>
-            <text x="85" y="270" fill="#fff" text-anchor="middle" font-size="12" font-weight="600">0</text>
+            <rect x="60" y="240" width="180" height="120" rx="6" fill="#ffffff" stroke="#1e2a47" stroke-width="1"/>
+            <circle cx="85" cy="265" r="12" fill="#1e2a47"/>
+            <text x="85" y="269" fill="#fff" text-anchor="middle" font-size="11" font-weight="500">0</text>
             <text x="115" y="270" fill="#1e2a47" font-size="14" font-weight="600">创建业务</text>
             <text x="75" y="298" fill="#8a93a8" font-size="10.5">createBusinessStep</text>
             <text x="75" y="320" fill="#8a93a8" font-size="10.5">↩ compensateCreateBusiness</text>
@@ -338,9 +334,9 @@ section { margin-bottom: 56px; }
           </g>
 
           <g>
-            <rect x="280" y="240" width="180" height="120" rx="8" fill="#fbf8f2" stroke="#1e2a47" stroke-width="1.5"/>
-            <circle cx="305" cy="265" r="14" fill="#1e2a47"/>
-            <text x="305" y="270" fill="#fff" text-anchor="middle" font-size="12" font-weight="600">1</text>
+            <rect x="280" y="240" width="180" height="120" rx="6" fill="#ffffff" stroke="#1e2a47" stroke-width="1"/>
+            <circle cx="305" cy="265" r="12" fill="#1e2a47"/>
+            <text x="305" y="269" fill="#fff" text-anchor="middle" font-size="11" font-weight="500">1</text>
             <text x="335" y="270" fill="#1e2a47" font-size="14" font-weight="600">创建录像</text>
             <text x="295" y="298" fill="#8a93a8" font-size="10.5">createRecordingStep</text>
             <text x="295" y="320" fill="#8a93a8" font-size="10.5">↩ compensateCreateRecording</text>
@@ -348,9 +344,9 @@ section { margin-bottom: 56px; }
           </g>
 
           <g>
-            <rect x="500" y="240" width="180" height="120" rx="8" fill="#fbf8f2" stroke="#1e2a47" stroke-width="1.5"/>
-            <circle cx="525" cy="265" r="14" fill="#1e2a47"/>
-            <text x="525" y="270" fill="#fff" text-anchor="middle" font-size="12" font-weight="600">2</text>
+            <rect x="500" y="240" width="180" height="120" rx="6" fill="#ffffff" stroke="#1e2a47" stroke-width="1"/>
+            <circle cx="525" cy="265" r="12" fill="#1e2a47"/>
+            <text x="525" y="269" fill="#fff" text-anchor="middle" font-size="11" font-weight="500">2</text>
             <text x="555" y="270" fill="#1e2a47" font-size="14" font-weight="600">写初始事件</text>
             <text x="515" y="298" fill="#8a93a8" font-size="10.5">initEventStep</text>
             <text x="515" y="320" fill="#8a93a8" font-size="10.5">↩ compensateInitEvent</text>
@@ -358,9 +354,9 @@ section { margin-bottom: 56px; }
           </g>
 
           <g>
-            <rect x="720" y="240" width="180" height="120" rx="8" fill="#fbf8f2" stroke="#1e2a47" stroke-width="1.5"/>
-            <circle cx="745" cy="265" r="14" fill="#1e2a47"/>
-            <text x="745" y="270" fill="#fff" text-anchor="middle" font-size="12" font-weight="600">3</text>
+            <rect x="720" y="240" width="180" height="120" rx="6" fill="#ffffff" stroke="#1e2a47" stroke-width="1"/>
+            <circle cx="745" cy="265" r="12" fill="#1e2a47"/>
+            <text x="745" y="269" fill="#fff" text-anchor="middle" font-size="11" font-weight="500">3</text>
             <text x="775" y="270" fill="#1e2a47" font-size="14" font-weight="600">风评快照</text>
             <text x="735" y="298" fill="#8a93a8" font-size="10.5">riskSnapshotStep</text>
             <text x="735" y="320" fill="#8a93a8" font-size="10.5">↩ compensateRiskSnapshot</text>
@@ -494,7 +490,7 @@ section { margin-bottom: 56px; }
       <div class="tab-content active" id="case-1">
         <div class="case">
           <div class="case-head">
-            <div class="case-title"><span class="case-num">1</span> 正常 Saga: 4 步全部完成</div>
+            <div class="case-title"><span class="case-num">CASE 01</span> 正常 Saga: 4 步全部完成</div>
             <div class="case-status" style="background:var(--green-soft);color:var(--green)">COMPLETED · 499ms</div>
           </div>
           <div class="case-body">
@@ -562,7 +558,7 @@ section { margin-bottom: 56px; }
       <div class="tab-content" id="case-2">
         <div class="case">
           <div class="case-head">
-            <div class="case-title"><span class="case-num">2</span> Step 1 注入失败 → 补偿 1 步</div>
+            <div class="case-title"><span class="case-num">CASE 02</span> Step 1 注入失败 → 补偿 1 步</div>
             <div class="case-status" style="background:var(--blue-soft);color:var(--blue)">COMPENSATED · 94ms</div>
           </div>
           <div class="case-body">
@@ -630,7 +626,7 @@ section { margin-bottom: 56px; }
       <div class="tab-content" id="case-3">
         <div class="case">
           <div class="case-head">
-            <div class="case-title"><span class="case-num">3</span> Step 3 失败 → 逆序补偿 3 步</div>
+            <div class="case-title"><span class="case-num">CASE 03</span> Step 3 失败 → 逆序补偿 3 步</div>
             <div class="case-status" style="background:var(--blue-soft);color:var(--blue)">COMPENSATED · 103ms</div>
           </div>
           <div class="case-body">
