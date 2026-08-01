@@ -98,4 +98,26 @@ public class ScriptYamlLoader {
         }
         return cache.size();
     }
+
+    /**
+     * 写入/更新缓存 (v1.4 用于 DB 话术同步)
+     */
+    public synchronized void put(String productId, Map<String, Object> script) {
+        if (cache.isEmpty()) {
+            loadAll();
+        }
+        cache.put(productId, script);
+        log.info("话术缓存写入: productId={}", productId);
+    }
+
+    /**
+     * 删除缓存 (v1.4 用于删除产品话术)
+     */
+    public synchronized void remove(String productId) {
+        if (cache.isEmpty()) {
+            loadAll();
+        }
+        cache.remove(productId);
+        log.info("话术缓存删除: productId={}", productId);
+    }
 }

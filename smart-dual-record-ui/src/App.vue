@@ -5,6 +5,7 @@ import BusinessCreate from '@/components/BusinessCreate.vue'
 import RecordingWorkbench from '@/components/RecordingWorkbench.vue'
 import OverviewPanel from '@/components/OverviewPanel.vue'
 import ScriptManager from '@/components/ScriptManager.vue'
+import ScriptConfigWorkbench from '@/components/ScriptConfigWorkbench.vue'
 import StateMachineViewer from '@/components/StateMachineViewer.vue'
 import RiskAssessmentPanel from '@/components/RiskAssessmentPanel.vue'
 import RecordingCompliancePanel from '@/components/RecordingCompliancePanel.vue'
@@ -34,6 +35,7 @@ const tabs = [
   { name: 'preservation', label: '证据保全', icon: 'Lock' },
   { name: 'overview', label: '全景查询', icon: 'DataAnalysis' },
   { name: 'scripts', label: '话术管理', icon: 'Document' },
+  { name: 'config', label: '话术配置', icon: 'Tools' },
   { name: 'state', label: '状态机', icon: 'Connection' }
 ]
 </script>
@@ -79,6 +81,7 @@ const tabs = [
           <EvidencePreservationPanel v-else-if="activeTab === 'preservation'" />
           <OverviewPanel v-else-if="activeTab === 'overview'" />
           <ScriptManager v-else-if="activeTab === 'scripts'" />
+          <ScriptConfigWorkbench v-else-if="activeTab === 'config'" />
           <StateMachineViewer v-else-if="activeTab === 'state'" :transitions="transitions" />
         </el-tab-pane>
       </el-tabs>

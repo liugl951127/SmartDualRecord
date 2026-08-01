@@ -100,6 +100,28 @@ export const scriptConfigApi = {
   all: () =>
     http.get<Record<string, ScriptTemplate>>('/script-config/all').then(r => r.data),
 
+  // ===== v1.4: 产品话术 CRUD (DB) =====
+  listDbTemplates: () =>
+    http.get<any[]>('/script-config/db-templates').then(r => r.data),
+
+  getDbTemplate: (productId: string) =>
+    http.get<any>('/script-config/db-template/' + productId).then(r => r.data),
+
+  upsertDbTemplate: (template: any) =>
+    http.post<any>('/script-config/db-template', template).then(r => r.data),
+
+  deleteDbTemplate: (id: string) =>
+    http.delete<any>('/script-config/db-template/' + id).then(r => r.data),
+
+  submitForReview: (id: string) =>
+    http.post<any>('/script-config/db-template/' + id + '/submit').then(r => r.data),
+
+  approveTemplate: (id: string, approver: string) =>
+    http.post<any>('/script-config/db-template/' + id + '/approve', null, { params: { approver } }).then(r => r.data),
+
+  freezeTemplate: (id: string) =>
+    http.post<any>('/script-config/db-template/' + id + '/freeze').then(r => r.data),
+
   addForbiddenPhrase: (phrase: string) =>
     http.post<any>('/script-config/forbidden-phrase', null, { params: { phrase } }).then(r => r.data),
 

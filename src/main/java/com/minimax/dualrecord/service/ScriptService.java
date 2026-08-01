@@ -1,5 +1,7 @@
 package com.minimax.dualrecord.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.minimax.dualrecord.config.ScriptProperties;
 import com.minimax.dualrecord.domain.ScriptTemplate;
 import com.minimax.dualrecord.exception.BusinessException;
@@ -297,5 +299,213 @@ public class ScriptService {
             scriptProperties.getDefaultForbiddenPhrases().add(phrase);
             log.info("运行时新增全局禁播词: {}", phrase);
         }
+    }
+
+    // ====================================================================
+    // 7. 产品话术 CRUD (数据库配置) - v1.4 新增
+    // ====================================================================
+
+    /**
+     * 解析 ScriptTemplate JSON 字段 → Map (给前端用)
+     */
+    public Map<String, Object> toApiMap(ScriptTemplate t) {
+        ObjectMapper om = new ObjectMapper();
+        Map<String, Object> map = new java.util.LinkedHashMap<>();
+        map.put("id", t.getId());
+        map.put("productId", t.getProductId());
+        map.put("productType", t.getProductType());
+        map.put("version", t.getVersion());
+        map.put("riskLevel", t.getRiskLevel());
+        map.put("contentHash", t.getContentHash());
+        map.put("status", t.getStatus());
+        map.put("approvedBy", t.getApprovedBy());
+        map.put("approvedAt", t.getApprovedAt());
+        map.put("createdAt", t.getCreatedAt());
+        map.put("updatedAt", t.getUpdatedAt());
+        try {
+            map.put("mandatoryDisclosure", t.getMandatoryDisclosure() == null ? List.of()
+                    : om.readValue(t.getMandatoryDisclosure(), new TypeReference<List<String>>() {}));
+            map.put("forbiddenPhrases", t.getForbiddenPhrases() == null ? List.of()
+                    : om.readValue(t.getForbiddenPhrases(), new TypeReference<List<String>>() {}));
+            map.put("requiredQuestions", t.getRequiredQuestions() == null ? List.of()
+                    : om.readValue(t.getRequiredQuestions(), new TypeReference<List<String>>() {}));
+            map.put("channelOverrides", t.getChannelOverrides() == null ? Map.of()
+                    : om.readValue(t.getChannelOverrides(), new TypeReference<Map<String, Object>>() {}));
+        } catch (Exception e) {
+            log.warn("解析 ScriptTemplate JSON 失败: productId={}", t.getProductId(), e);
+        }
+        return map;
+    }
+
+    /**
+     * 查询产品话术模板 (DB) - 单条
+     */
+    public ScriptTemplate getDbTemplate(String productId) {
+        return templateRepository.selectOne(
+                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<ScriptTemplate>()
+                        .eq("product_id", productId)
+                        .orderByDesc("version")
+                        .last("LIMIT 1"));
+    }
+
+    /**
+     * 查询所有产品话术模板 (DB) - 列表
+     */
+    public List<ScriptTemplate> listDbTemplates() {
+        return templateRepository.selectList(
+                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<ScriptTemplate>()
+                        .orderByDesc("updated_at"));
+    }
+
+    /**
+     * 创建/更新产品话术模板
+     * 同 productId 多版本: 最新 version 生效
+     */
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
+    public ScriptTemplate upsertDbTemplate(ScriptTemplate template) {
+        if (template.getProductId() == null || template.getProductId().isEmpty()) {
+            throw new BusinessException("INVALID_PRODUCT_ID", "productId 不能为空");
+        }
+        if (template.getProductType() == null) {
+            throw new BusinessException("INVALID_PRODUCT_TYPE", "productType 不能为空");
+        }
+        if (template.getRiskLevel() == null) {
+            throw new BusinessException("INVALID_RISK_LEVEL", "riskLevel 不能为空");
+        }
+        // 必填字段: 必播项 / 禁播词
+        if (template.getMandatoryDisclosure() == null || template.getMandatoryDisclosure().isEmpty()) {
+            throw new BusinessException("MISSING_MANDATORY", "必播项 mandatoryDisclosure 不能为空");
+        }
+        if (template.getForbiddenPhrases() == null || template.getForbiddenPhrases().isEmpty()) {
+            throw new BusinessException("MISSING_FORBIDDEN", "禁播词 forbiddenPhrases 不能为空");
+        }
+        if (template.getVersion() == null) {
+            template.setVersion("v1.0");
+        }
+        if (template.getStatus() == null) {
+            template.setStatus("DRAFT");
+        }
+        // 计算内容 hash
+        if (template.getContentHash() == null) {
+            template.setContentHash(computeContentHash(template));
+        }
+        // 检查是否已存在
+        ScriptTemplate existing = templateRepository.selectOne(
+                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<ScriptTemplate>()
+                        .eq("product_id", template.getProductId())
+                        .eq("version", template.getVersion()));
+        if (existing != null) {
+            template.setId(existing.getId());
+            template.setUpdatedAt(java.time.LocalDateTime.now());
+            templateRepository.updateById(template);
+            log.info("更新话术模板: productId={}, version={}", template.getProductId(), template.getVersion());
+        } else {
+            template.setCreatedAt(java.time.LocalDateTime.now());
+            template.setUpdatedAt(java.time.LocalDateTime.now());
+            templateRepository.insert(template);
+            log.info("新增话术模板: productId={}, version={}", template.getProductId(), template.getVersion());
+        }
+        // 同步到 YAML 加载器缓存
+        yamlLoader.put(template.getProductId(), toScriptMap(template));
+        return template;
+    }
+
+    /**
+     * 删除产品话术模板
+     */
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
+    public boolean deleteDbTemplate(String id) {
+        ScriptTemplate t = templateRepository.selectById(id);
+        if (t == null) return false;
+        templateRepository.deleteById(id);
+        yamlLoader.remove(t.getProductId());
+        log.info("删除话术模板: productId={}", t.getProductId());
+        return true;
+    }
+
+    /**
+     * 提交审核 (DRAFT → PENDING_REVIEW)
+     */
+    public ScriptTemplate submitForReview(String id) {
+        ScriptTemplate t = templateRepository.selectById(id);
+        if (t == null) throw new BusinessException("NOT_FOUND", "模板不存在: " + id);
+        if (!"DRAFT".equals(t.getStatus())) {
+            throw new BusinessException("INVALID_STATE", "只有 DRAFT 状态可提交, 当前: " + t.getStatus());
+        }
+        t.setStatus("PENDING_REVIEW");
+        t.setUpdatedAt(java.time.LocalDateTime.now());
+        templateRepository.updateById(t);
+        return t;
+    }
+
+    /**
+     * 审核通过 (PENDING_REVIEW → APPROVED, 立即生效)
+     */
+    public ScriptTemplate approveTemplate(String id, String approver) {
+        ScriptTemplate t = templateRepository.selectById(id);
+        if (t == null) throw new BusinessException("NOT_FOUND", "模板不存在: " + id);
+        if (!"PENDING_REVIEW".equals(t.getStatus())) {
+            throw new BusinessException("INVALID_STATE", "只有 PENDING_REVIEW 状态可审核, 当前: " + t.getStatus());
+        }
+        t.setStatus("APPROVED");
+        t.setApprovedBy(approver);
+        t.setApprovedAt(java.time.LocalDateTime.now());
+        t.setUpdatedAt(java.time.LocalDateTime.now());
+        templateRepository.updateById(t);
+        yamlLoader.put(t.getProductId(), toScriptMap(t));
+        return t;
+    }
+
+    /**
+     * 冻结模板 (APPROVED → FROZEN, 不可再改, 司法级别锁)
+     */
+    public ScriptTemplate freezeTemplate(String id) {
+        ScriptTemplate t = templateRepository.selectById(id);
+        if (t == null) throw new BusinessException("NOT_FOUND", "模板不存在: " + id);
+        if (!"APPROVED".equals(t.getStatus())) {
+            throw new BusinessException("INVALID_STATE", "只有 APPROVED 状态可冻结, 当前: " + t.getStatus());
+        }
+        t.setStatus("FROZEN");
+        t.setUpdatedAt(java.time.LocalDateTime.now());
+        templateRepository.updateById(t);
+        return t;
+    }
+
+    /**
+     * 计算话术内容 hash
+     */
+    private String computeContentHash(ScriptTemplate t) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(t.getProductId()).append("|");
+        sb.append(t.getRiskLevel()).append("|");
+        if (t.getMandatoryDisclosure() != null) sb.append(String.join(",", t.getMandatoryDisclosure()));
+        sb.append("|");
+        if (t.getForbiddenPhrases() != null) sb.append(String.join(",", t.getForbiddenPhrases()));
+        try {
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] hash = md.digest(sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            StringBuilder hex = new StringBuilder();
+            for (byte b : hash) hex.append(String.format("%02x", b));
+            return hex.substring(0, 32);
+        } catch (Exception e) {
+            return "hash-error-" + System.currentTimeMillis();
+        }
+    }
+
+    /**
+     * 转换 ScriptTemplate 为 scriptMap (用于 ScriptYamlLoader 缓存)
+     */
+    private Map<String, Object> toScriptMap(ScriptTemplate t) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("product_id", t.getProductId());
+        map.put("product_type", t.getProductType());
+        map.put("version", t.getVersion());
+        map.put("risk_level", t.getRiskLevel());
+        map.put("mandatory_disclosure", t.getMandatoryDisclosure());
+        map.put("forbidden_phrases", t.getForbiddenPhrases());
+        map.put("required_questions", t.getRequiredQuestions());
+        map.put("channel_overrides", t.getChannelOverrides());
+        map.put("source", "DB");
+        return map;
     }
 }

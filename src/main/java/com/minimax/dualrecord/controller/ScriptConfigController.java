@@ -1,6 +1,9 @@
 package com.minimax.dualrecord.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.minimax.dualrecord.config.ScriptProperties;
+import com.minimax.dualrecord.domain.ScriptTemplate;
+import com.minimax.dualrecord.dto.ScriptTemplateRequest;
 import com.minimax.dualrecord.service.ScriptService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -100,5 +103,73 @@ public class ScriptConfigController {
     @Operation(summary = "查询当前全局禁播词列表")
     public ResponseEntity<List<String>> forbiddenPhrases() {
         return ResponseEntity.ok(scriptProperties.getDefaultForbiddenPhrases());
+    }
+
+    // ====================================================================
+    // v1.4 产品话术 CRUD (DB 持久化) - 配置工作台
+    // ====================================================================
+
+    @GetMapping("/db-templates")
+    @Operation(summary = "查询所有产品话术模板 (DB)")
+    public ResponseEntity<List<Map<String, Object>>> listDbTemplates() {
+        List<Map<String, Object>> result = new java.util.ArrayList<>();
+        for (ScriptTemplate t : scriptService.listDbTemplates()) {
+            result.add(scriptService.toApiMap(t));
+        }
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/db-template/{productId}")
+    @Operation(summary = "查询单个产品话术模板 (DB)")
+    public ResponseEntity<Map<String, Object>> getDbTemplate(@PathVariable String productId) {
+        ScriptTemplate t = scriptService.getDbTemplate(productId);
+        if (t == null) return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(scriptService.toApiMap(t));
+    }
+
+    @PostMapping("/db-template")
+    @Operation(summary = "创建/更新产品话术模板 (DB)")
+    public ResponseEntity<ScriptTemplate> upsertDbTemplate(@RequestBody ScriptTemplateRequest req) throws Exception {
+        // DTO → Entity 转换 (List/Map → JSON String)
+        ObjectMapper om = new ObjectMapper();
+        ScriptTemplate template = new ScriptTemplate();
+        template.setId(req.getId());
+        template.setProductId(req.getProductId());
+        template.setProductType(req.getProductType());
+        template.setVersion(req.getVersion());
+        template.setRiskLevel(req.getRiskLevel());
+        template.setMandatoryDisclosure(req.getMandatoryDisclosure() == null ? "[]" : om.writeValueAsString(req.getMandatoryDisclosure()));
+        template.setForbiddenPhrases(req.getForbiddenPhrases() == null ? "[]" : om.writeValueAsString(req.getForbiddenPhrases()));
+        template.setRequiredQuestions(req.getRequiredQuestions() == null ? "[]" : om.writeValueAsString(req.getRequiredQuestions()));
+        template.setChannelOverrides(req.getChannelOverrides() == null ? "{}" : om.writeValueAsString(req.getChannelOverrides()));
+        template.setStatus(req.getStatus());
+        return ResponseEntity.ok(scriptService.upsertDbTemplate(template));
+    }
+
+    @DeleteMapping("/db-template/{id}")
+    @Operation(summary = "删除产品话术模板 (DB)")
+    public ResponseEntity<Map<String, Object>> deleteDbTemplate(@PathVariable String id) {
+        boolean ok = scriptService.deleteDbTemplate(id);
+        return ResponseEntity.ok(Map.of("deleted", ok));
+    }
+
+    @PostMapping("/db-template/{id}/submit")
+    @Operation(summary = "提交审核 (DRAFT → PENDING_REVIEW)")
+    public ResponseEntity<ScriptTemplate> submitForReview(@PathVariable String id) {
+        return ResponseEntity.ok(scriptService.submitForReview(id));
+    }
+
+    @PostMapping("/db-template/{id}/approve")
+    @Operation(summary = "审核通过 (PENDING_REVIEW → APPROVED)")
+    public ResponseEntity<ScriptTemplate> approveTemplate(
+            @PathVariable String id,
+            @RequestParam String approver) {
+        return ResponseEntity.ok(scriptService.approveTemplate(id, approver));
+    }
+
+    @PostMapping("/db-template/{id}/freeze")
+    @Operation(summary = "冻结模板 (APPROVED → FROZEN, 司法锁)")
+    public ResponseEntity<ScriptTemplate> freezeTemplate(@PathVariable String id) {
+        return ResponseEntity.ok(scriptService.freezeTemplate(id));
     }
 }
