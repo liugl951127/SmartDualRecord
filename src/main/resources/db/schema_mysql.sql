@@ -422,3 +422,62 @@ CREATE TABLE tb_tamper_alert (
     INDEX idx_alert_severity (severity),
     INDEX idx_alert_time (detected_at)
 );
+
+-- ===========================================================
+-- Saga 分布式事务 (v1.7.0)
+-- ===========================================================
+
+CREATE TABLE tb_saga_instance (
+    id              VARCHAR(32) PRIMARY KEY,
+    saga_id         VARCHAR(64) NOT NULL UNIQUE,
+    saga_name       VARCHAR(64) NOT NULL,
+    business_id     VARCHAR(64),
+    status          VARCHAR(16) NOT NULL DEFAULT 'PENDING',
+    current_step    INT NOT NULL DEFAULT 0,
+    total_steps     INT NOT NULL DEFAULT 0,
+    payload_json    TEXT,
+    context_json    TEXT,
+    error_message   VARCHAR(2048),
+    error_step      VARCHAR(64),
+    retry_count     INT NOT NULL DEFAULT 0,
+    max_retries     INT NOT NULL DEFAULT 3,
+    timeout_ms      BIGINT NOT NULL DEFAULT 60000,
+    started_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    completed_at    TIMESTAMP,
+    updated_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_saga_biz (business_id),
+    INDEX idx_saga_status (status),
+    INDEX idx_saga_name (saga_name)
+);
+
+CREATE TABLE tb_saga_step (
+    id              VARCHAR(32) PRIMARY KEY,
+    saga_id         VARCHAR(64) NOT NULL,
+    step_order      INT NOT NULL,
+    step_name       VARCHAR(64) NOT NULL,
+    target_method   VARCHAR(256) NOT NULL,
+    compensate_method VARCHAR(256),
+    input_json      TEXT,
+    output_json     TEXT,
+    status          VARCHAR(16) NOT NULL DEFAULT 'PENDING',
+    error_message   VARCHAR(2048),
+    retry_count     INT NOT NULL DEFAULT 0,
+    started_at      TIMESTAMP,
+    completed_at    TIMESTAMP,
+    duration_ms     BIGINT,
+    INDEX idx_step_saga (saga_id, step_order),
+    UNIQUE KEY uk_step (saga_id, step_order)
+);
+
+CREATE TABLE tb_saga_event (
+    id              VARCHAR(32) PRIMARY KEY,
+    saga_id         VARCHAR(64) NOT NULL,
+    step_order      INT,
+    event_type      VARCHAR(32) NOT NULL,
+    level           VARCHAR(16) NOT NULL DEFAULT 'INFO',
+    message         VARCHAR(2048),
+    payload_json    TEXT,
+    occurred_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_evt_saga (saga_id, occurred_at),
+    INDEX idx_evt_type (event_type)
+);

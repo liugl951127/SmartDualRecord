@@ -428,3 +428,65 @@ CREATE TABLE tb_tamper_alert (
     INDEX idx_alert_severity (severity),
     INDEX idx_alert_time (detected_at)
 );
+
+-- ===========================================================
+-- Saga 分布式事务 (v1.7.0)
+-- ===========================================================
+
+-- 1. Saga 实例 - 一次完整事务
+CREATE TABLE tb_saga_instance (
+    id              VARCHAR(32) PRIMARY KEY,
+    saga_id         VARCHAR(64) NOT NULL UNIQUE,         -- 外部业务关联 ID
+    saga_name       VARCHAR(64) NOT NULL,                 -- Saga 名称 (CREATE_BUSINESS / SIGN_ARCHIVE ...)
+    business_id     VARCHAR(64),                         -- 业务 ID
+    status          VARCHAR(16) NOT NULL DEFAULT 'PENDING',  -- PENDING / RUNNING / COMPLETED / FAILED / COMPENSATING / COMPENSATED / SUSPENDED
+    current_step    INT NOT NULL DEFAULT 0,
+    total_steps     INT NOT NULL DEFAULT 0,
+    payload_json    TEXT,                                 -- 输入参数 JSON
+    context_json    TEXT,                                 -- 步骤间共享上下文
+    error_message   VARCHAR(2048),
+    error_step      VARCHAR(64),
+    retry_count     INT NOT NULL DEFAULT 0,
+    max_retries     INT NOT NULL DEFAULT 3,
+    timeout_ms      BIGINT NOT NULL DEFAULT 60000,        -- 单步超时
+    started_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    completed_at    TIMESTAMP,
+    updated_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_saga_biz (business_id),
+    INDEX idx_saga_status (status),
+    INDEX idx_saga_name (saga_name)
+);
+
+-- 2. Saga 步骤 - 每个子事务
+CREATE TABLE tb_saga_step (
+    id              VARCHAR(32) PRIMARY KEY,
+    saga_id         VARCHAR(64) NOT NULL,
+    step_order      INT NOT NULL,
+    step_name       VARCHAR(64) NOT NULL,
+    target_method   VARCHAR(256) NOT NULL,                -- 调用的方法签名
+    compensate_method VARCHAR(256),                       -- 补偿方法签名 (失败时调用)
+    input_json      TEXT,                                 -- 步骤输入
+    output_json     TEXT,                                 -- 步骤输出
+    status          VARCHAR(16) NOT NULL DEFAULT 'PENDING',  -- PENDING / RUNNING / COMPLETED / FAILED / COMPENSATED / SKIPPED
+    error_message   VARCHAR(2048),
+    retry_count     INT NOT NULL DEFAULT 0,
+    started_at      TIMESTAMP,
+    completed_at    TIMESTAMP,
+    duration_ms     BIGINT,
+    INDEX idx_step_saga (saga_id, step_order),
+    UNIQUE KEY uk_step (saga_id, step_order)
+);
+
+-- 3. Saga 事件 - 完整生命周期日志 (审计 + 调试)
+CREATE TABLE tb_saga_event (
+    id              VARCHAR(32) PRIMARY KEY,
+    saga_id         VARCHAR(64) NOT NULL,
+    step_order      INT,
+    event_type      VARCHAR(32) NOT NULL,                 -- STARTED / STEP_OK / STEP_FAIL / COMPENSATING / COMPENSATED / RETRY / COMPLETED / FAILED / SUSPENDED
+    level           VARCHAR(16) NOT NULL DEFAULT 'INFO',  -- INFO / WARN / ERROR
+    message         VARCHAR(2048),
+    payload_json    TEXT,
+    occurred_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_evt_saga (saga_id, occurred_at),
+    INDEX idx_evt_type (event_type)
+);
