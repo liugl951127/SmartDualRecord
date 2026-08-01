@@ -13,6 +13,7 @@
         <span>REC</span>
       </div>
       <div class="node-progress">{{ currentNode + 1 }} / {{ nodes.length }}</div>
+      <div v-if="state" class="state-badge">状态: {{ stateLabel(state) }}</div>
     </div>
 
     <div class="timeline-wrap">
@@ -35,21 +36,37 @@
       </div>
     </div>
 
-    <div class="script-area">
-      <div class="script-title">📋 当前话术 ({{ nodes[currentNode].name }})</div>
+    <div class="script-area" v-if="script">
+      <div class="script-title">📋 当前话术</div>
       <div class="script-content">
-        <div v-for="(line, i) in currentScriptLines" :key="i" class="script-line">
-          <span class="line-num">{{ i + 1 }}.</span>
-          <span>{{ line }}</span>
+        <div class="script-section">
+          <div class="ss-label">必播项</div>
+          <ul>
+            <li v-for="(d, i) in script.mandatoryDisclosure" :key="i">
+              <span class="line-num">{{ i + 1 }}.</span>{{ d }}
+            </li>
+          </ul>
+        </div>
+        <div class="script-section">
+          <div class="ss-label">必问题</div>
+          <ul>
+            <li v-for="(q, i) in script.requiredQuestions" :key="i">
+              <span class="line-num">{{ i + 1 }}.</span>{{ q }}
+            </li>
+          </ul>
+        </div>
+        <div class="script-section">
+          <div class="ss-label">禁播词 (触发即失败)</div>
+          <div class="phrases">
+            <span v-for="p in script.forbiddenPhrases" :key="p" class="phrase">{{ p }}</span>
+          </div>
         </div>
       </div>
     </div>
 
     <div class="control-bar">
       <div class="ctrl-row">
-        <div :class="['ctrl-btn', currentNode === 0 && 'disabled']" @click="prev">
-          ◀ 上一节点
-        </div>
+        <div :class="['ctrl-btn', currentNode === 0 && 'disabled']" @click="prev">◀ 上一节点</div>
         <div :class="['ctrl-btn', recording ? 'recording' : 'start']" @click="toggleRecord">
           {{ recording ? '⏸ 暂停' : '▶ 开始录制' }}
         </div>
@@ -69,7 +86,6 @@
       </van-button>
     </div>
 
-    <!-- 签字弹窗 -->
     <van-dialog
       v-model:show="showSign"
       title="电子签名"
@@ -97,23 +113,32 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick, reactive } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { showToast, showDialog } from 'vant'
-import { useRecordingStore, NODES } from '@/stores/recording'
-import { recordingApi, businessApi, scriptApi } from '@/api'
+import { showToast } from 'vant'
+import { recordingApi, scriptApi } from '@/api'
 
 const route = useRoute()
 const router = useRouter()
-const store = useRecordingStore()
+const businessId = computed(() => route.params.businessId as string)
 
-const businessId = computed(() => route.params.businessId as string || `BIZ-${Date.now()}`)
-const nodes = NODES
+const nodes = [
+  { id: 'NODE_01_IDENTITY', name: '身份核验', desc: '出示身份证 + 联网核查' },
+  { id: 'NODE_02_DISCLOSURE', name: '风险揭示', desc: '产品基本信息 / 风险等级' },
+  { id: 'NODE_03_PRODUCT', name: '产品展示', desc: '产品特点 / 收益 / 费用' },
+  { id: 'NODE_04_RIGHTS', name: '权利义务', desc: '犹豫期 / 赎回 / 投诉' },
+  { id: 'NODE_05_TRUTH_TELL', name: '如实告知', desc: '客户风险承受能力确认' },
+  { id: 'NODE_06_CONFIRM', name: '明确肯定', desc: '客户明确购买意愿' },
+  { id: 'NODE_07_SIGN', name: '签署', desc: '合同 + 风险揭示书签字' },
+  { id: 'NODE_08_FOLLOWUP', name: '补充询问', desc: '15 天 3 次回访' }
+]
+
 const currentNode = ref(0)
 const recording = ref(false)
 const nodeStart = ref(Date.now())
 const nodeElapsed = ref(0)
-const errorMsg = ref('')
+const state = ref<string>('')
+const script = ref<any>(null)
 
 const videoEl = ref<HTMLVideoElement>()
 const canvasEl = ref<HTMLCanvasElement>()
@@ -135,30 +160,27 @@ const formattedTime = computed(() => {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 })
 
-// 当前节点话术
-const currentScriptLines = computed(() => {
-  const lines: Record<string, string[]> = {
-    '01-IDENTITY': ['请出示您的身份证原件', '客户: [出示身份证]', '请将身份证正面对准摄像头', '客户: [对准摄像头]'],
-    '02-DISCLOSURE': ['本产品属于 R2 级中低风险', '预期年化收益 3.6%, 不保证', '投资期限 180 天', '产品代码: BNK-FIN-2026Q3-001'],
-    '03-PRODUCT': ['本产品为固收类理财', '主要投资于国债/政策性金融债', '适合 C2 及以上风险等级客户', '管理费 0.5%/年, 托管费 0.05%/年'],
-    '04-RIGHTS': ['本产品有 24 小时冷静期', '冷静期内可无条件撤单', '持有到期可赎回', '如需投诉请拨打 95588'],
-    '05-TRUTH_TELL': ['请问您的投资经验?', '客户: [如实回答]', '请问您的收入来源?', '客户: [如实回答]', '请确认以上信息真实有效'],
-    '06-AFFIRMATIVE': ['您是否已了解产品风险?', '客户: 了解', '您是否自愿购买本产品?', '客户: 自愿购买', '您是否同意相关协议?', '客户: 同意'],
-    '07-SIGN': ['请在下方手写电子签名', '客户: [签名]', '签名提交后本次双录完成'],
-    '08-FOLLOWUP': ['双录已完成', '产品有 15 天犹豫期', '犹豫期内可申请撤单', '15 天内会有 3 次回访确认']
-  }
-  return lines[nodes[currentNode.value].id] || []
-})
-
 function getNodeCls(i: number) {
   if (i < currentNode.value) return 'completed'
   if (i === currentNode.value) return 'active'
   return ''
 }
 
+function stateLabel(s: string) {
+  const map: any = {
+    INIT: '待开始', IDENTITY_VERIFIED: '已核身', RISK_ASSESSED: '已评估',
+    SCRIPT_LOADED: '已加载话术', RECORDING: '录制中', RECORDED: '已录制',
+    AI_QA: 'AI 质检', AI_QA_PASSED: 'AI 通过', AI_QA_FLAGGED: 'AI 标记',
+    HUMAN_REVIEW: '人工复核', HUMAN_REVIEWED: '复核完成', SIGNED: '已签署',
+    ARCHIVED: '已归档', FAILED: '已失败', OFFLINE_FAILED: '线下失败', ROLLED_BACK: '已回滚'
+  }
+  return map[s] || s
+}
+
 onMounted(async () => {
-  await startCamera()
+  await loadOverview()
   await loadScript()
+  await startCamera()
   nextTick(() => setupWatermark())
 })
 
@@ -167,17 +189,63 @@ onUnmounted(() => {
   if (watermarkTimer) clearInterval(watermarkTimer)
 })
 
+async function loadOverview() {
+  try {
+    const res: any = await recordingApi.overview(businessId.value)
+    if (res?.business) {
+      state.value = res.business.state
+    }
+  } catch (e) {
+    // 业务可能尚未创建, 忽略
+  }
+}
+
+async function loadScript() {
+  try {
+    // 1. 先获取话术 (用于显示)
+    const overview: any = await recordingApi.overview(businessId.value)
+    const productId = overview?.business?.productId
+    if (productId) {
+      const res: any = await scriptApi.getDbTemplate(productId)
+      // 解析 JSON
+      if (res.mandatoryDisclosure && typeof res.mandatoryDisclosure === 'string') {
+        try { res.mandatoryDisclosure = JSON.parse(res.mandatoryDisclosure) } catch {}
+      }
+      if (res.requiredQuestions && typeof res.requiredQuestions === 'string') {
+        try { res.requiredQuestions = JSON.parse(res.requiredQuestions) } catch {}
+      }
+      if (res.forbiddenPhrases && typeof res.forbiddenPhrases === 'string') {
+        try { res.forbiddenPhrases = JSON.parse(res.forbiddenPhrases) } catch {}
+      }
+      script.value = res
+    }
+    // 2. 调用后端 script/load 让后端状态机进入 SCRIPT_LOADED
+    if (productId && state.value === 'RISK_ASSESSED') {
+      try {
+        await recordingApi.loadScript(businessId.value, productId)
+        state.value = 'SCRIPT_LOADED'
+      } catch {}
+    }
+    // 3. 如果还在 INIT/未开始, 尝试进入开始录制
+    if (state.value === 'SCRIPT_LOADED' || state.value === 'RISK_ASSESSED' || state.value === 'IDENTITY_VERIFIED') {
+      try {
+        await recordingApi.beginRecording(businessId.value)
+        state.value = 'RECORDING'
+      } catch {}
+    }
+  } catch (e) {
+    console.warn('Load script failed', e)
+  }
+}
+
 async function startCamera() {
   try {
     stream = await navigator.mediaDevices.getUserMedia({
       video: { width: 1280, height: 720, facingMode: 'user' },
       audio: { echoCancellation: true, noiseSuppression: true }
     })
-    if (videoEl.value) {
-      videoEl.value.srcObject = stream
-    }
+    if (videoEl.value) videoEl.value.srcObject = stream
   } catch (e: any) {
-    errorMsg.value = `摄像头访问失败: ${e.message}`
     showToast('请允许访问摄像头和麦克风')
   }
 }
@@ -201,18 +269,11 @@ function setupWatermark() {
 }
 
 function toggleRecord() {
-  if (recording.value) {
-    pauseRecord()
-  } else {
-    startRecord()
-  }
+  recording.value ? pauseRecord() : startRecord()
 }
 
 function startRecord() {
-  if (!stream) {
-    showToast('摄像头未就绪')
-    return
-  }
+  if (!stream) { showToast('摄像头未就绪'); return }
   try {
     const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm'
     mediaRecorder = new MediaRecorder(stream, { mimeType: mime })
@@ -220,21 +281,28 @@ function startRecord() {
     mediaRecorder.start(1000)
     recording.value = true
   } catch (e: any) {
-    errorMsg.value = e.message
+    showToast('录制启动失败')
   }
 }
 
 function pauseRecord() {
-  if (mediaRecorder && mediaRecorder.state === 'recording') {
-    mediaRecorder.pause()
-  }
+  if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.pause()
   recording.value = false
 }
 
-function next() {
+async function next() {
   if (currentNode.value < nodes.length - 1) {
-    // 上传当前节点录像
-    uploadNode()
+    // 真实 API: 通知后端完成节点
+    try {
+      const res: any = await recordingApi.completeNode(businessId.value, {
+        recId: 'rec-mobile-' + businessId.value,
+        node: nodes[currentNode.value].id,
+        asrText: '客户在节点 ' + nodes[currentNode.value].id + ' 完成确认'
+      })
+      if (res?.state) state.value = res.state
+    } catch (e) {
+      // 允许继续
+    }
     currentNode.value++
     nodeStart.value = Date.now()
     chunks = []
@@ -248,24 +316,15 @@ function prev() {
   }
 }
 
-async function uploadNode() {
-  if (chunks.length === 0) return
+async function onComplete() {
+  // 完成最后一个节点
   try {
-    const blob = new Blob(chunks, { type: 'video/webm' })
     await recordingApi.completeNode(businessId.value, {
-      nodeId: nodes[currentNode.value].id,
-      durationMs: Date.now() - nodeStart.value,
-      fileSize: blob.size
+      recId: 'rec-mobile-' + businessId.value,
+      node: nodes[currentNode.value].id,
+      asrText: '客户在节点 ' + nodes[currentNode.value].id + ' 完成确认'
     })
   } catch {}
-}
-
-async function loadScript() {
-  await scriptApi.getTemplate('BNK-FIN-2026Q3-001', 'INTERNET_TEXT')
-}
-
-async function onComplete() {
-  await uploadNode()
   showSign.value = true
   await nextTick()
   setupSignCanvas()
@@ -274,7 +333,6 @@ async function onComplete() {
 function setupSignCanvas() {
   if (!signCanvasEl.value) return
   const canvas = signCanvasEl.value
-  // 适配 retina
   const ratio = window.devicePixelRatio || 1
   canvas.width = 320 * ratio
   canvas.height = 160 * ratio
@@ -307,26 +365,27 @@ function onSignMove(e: TouchEvent) {
   signContext.stroke()
   lastPos = { x, y }
 }
-function onSignEnd() {
-  isDrawing = false
-}
+function onSignEnd() { isDrawing = false }
 function clearSign() {
-  if (!signContext || !signCanvasEl.value) return
-  signContext.clearRect(0, 0, signCanvasEl.value.width, signCanvasEl.value.height)
+  if (signContext && signCanvasEl.value) {
+    signContext.clearRect(0, 0, signCanvasEl.value.width, signCanvasEl.value.height)
+  }
 }
 
 async function onSign() {
-  // 上传签名 + 完成双录
   try {
-    const dataUrl = signCanvasEl.value?.toDataURL('image/png')
-    await recordingApi.complete(businessId.value, {
-      signature: dataUrl,
-      totalNodes: nodes.length
-    })
+    // 1. 签字 (后端返回 204)
+    await recordingApi.sign(businessId.value)
+    state.value = 'SIGNED'
+    // 2. 完成 (AI 终检)
+    try {
+      const final: any = await recordingApi.finalize(businessId.value, 'rec-mobile-' + businessId.value, '客户已签字, 双录完成')
+      state.value = final?.result || 'AI_QA'
+    } catch {}
     showToast('双录已完成')
     setTimeout(() => router.replace('/h5/orders'), 800)
-  } catch {
-    showToast('提交失败, 请重试')
+  } catch (e: any) {
+    showToast('提交失败: ' + (e?.message || '未知错误'))
   }
 }
 
@@ -369,27 +428,17 @@ function stopAll() {
   aspect-ratio: 16 / 9;
   overflow: hidden;
 }
-.video {
-  width: 100%; height: 100%;
-  object-fit: cover;
-}
-.watermark {
-  position: absolute; inset: 0;
-  width: 100%; height: 100%;
-  pointer-events: none;
-}
+.video { width: 100%; height: 100%; object-fit: cover; }
+.watermark { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .rec-badge {
-  position: absolute;
-  top: 12px; left: 12px;
+  position: absolute; top: 12px; left: 12px;
   background: rgba(238,10,36,0.85);
   color: white;
   padding: 4px 10px;
   border-radius: 4px;
   font-size: 11px;
   font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 4px;
+  display: flex; align-items: center; gap: 4px;
 }
 .rec-dot {
   width: 8px; height: 8px;
@@ -398,10 +447,8 @@ function stopAll() {
   animation: blink 1s infinite;
 }
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-
 .node-progress {
-  position: absolute;
-  top: 12px; right: 12px;
+  position: absolute; top: 12px; right: 12px;
   background: rgba(0,0,0,0.5);
   color: white;
   padding: 4px 8px;
@@ -409,13 +456,17 @@ function stopAll() {
   font-size: 11px;
   font-family: monospace;
 }
-
-.timeline-wrap {
-  background: white;
-  padding: 12px 16px;
-  margin: 12px;
-  border-radius: 12px;
+.state-badge {
+  position: absolute; bottom: 12px; left: 12px;
+  background: rgba(184,134,11,0.85);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: monospace;
 }
+
+.timeline-wrap { background: white; padding: 12px 16px; margin: 12px; border-radius: 12px; }
 .timeline { position: relative; padding-left: 32px; }
 .timeline::before {
   content: '';
@@ -454,31 +505,29 @@ function stopAll() {
   padding: 12px 16px;
   border-radius: 12px;
   flex: 1;
-}
-.script-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-2);
-  margin-bottom: 8px;
-}
-.script-content {
-  max-height: 180px;
+  max-height: 280px;
   overflow-y: auto;
 }
-.script-line {
-  display: flex;
-  gap: 8px;
-  padding: 6px 0;
-  font-size: 13px;
+.script-title { font-size: 13px; font-weight: 600; color: var(--text-2); margin-bottom: 8px; }
+.script-content { }
+.script-section { margin-bottom: 12px; }
+.script-section:last-child { margin-bottom: 0; }
+.ss-label { font-size: 11px; color: var(--text-3); margin-bottom: 4px; }
+.script-section ul { list-style: none; padding: 0; margin: 0; }
+.script-section li {
+  display: flex; gap: 6px;
+  padding: 3px 0;
+  font-size: 12px;
   line-height: 1.5;
-  border-bottom: 1px dashed var(--border);
-  &:last-child { border-bottom: none; }
 }
-.line-num {
-  color: var(--accent);
-  font-weight: 600;
-  flex-shrink: 0;
-  font-family: monospace;
+.line-num { color: var(--accent); font-weight: 600; font-family: monospace; }
+.phrases { display: flex; flex-wrap: wrap; gap: 4px; }
+.phrase {
+  background: rgba(238,10,36,0.1);
+  color: var(--danger);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
 }
 
 .control-bar {

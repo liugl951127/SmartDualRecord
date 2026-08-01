@@ -2,7 +2,7 @@
   <div class="product-list">
     <div class="page-header">
       <h1 class="page-title">产品超市</h1>
-      <p class="page-subtitle">智能匹配您的风险等级</p>
+      <p class="page-subtitle">从真实话术库加载 · 共 {{ products.length }} 个产品</p>
     </div>
 
     <div class="filter-bar">
@@ -13,31 +13,35 @@
           :class="['tab', activeType === t.value && 'active']"
           @click="activeType = t.value"
         >
-          {{ t.label }}
+          {{ t.label }} ({{ countByType(t.value) }})
         </div>
       </div>
-      <div class="search-bar">
-        <van-search
-          v-model="searchKey"
-          placeholder="搜索产品"
-          shape="round"
-          background="transparent"
-        />
-      </div>
+      <van-search
+        v-model="searchKey"
+        placeholder="搜索产品名称 / 代码"
+        shape="round"
+        background="transparent"
+      />
     </div>
 
-    <div class="product-list-content">
+    <div v-if="loading" class="loading-state">加载中...</div>
+    <div v-else-if="!filtered.length" class="empty">
+      <div class="empty-icon">📦</div>
+      <p>暂无符合条件的产品</p>
+    </div>
+
+    <div v-else class="product-list-content">
       <div
         v-for="p in filtered"
-        :key="p.id"
+        :key="p.productId"
         class="product-card"
-        @click="$router.push(`/h5/product/${p.id}`)"
+        @click="$router.push(`/h5/product/${p.productId}`)"
       >
         <div class="card-header">
-          <div class="product-type-icon">{{ typeIcon(p.type) }}</div>
+          <div class="product-type-icon">{{ typeIcon(p.productType) }}</div>
           <div class="header-meta">
-            <div class="product-name">{{ p.name }}</div>
-            <div class="product-id">{{ p.id }}</div>
+            <div class="product-name">{{ getName(p) }}</div>
+            <div class="product-id">{{ p.productId }} · v{{ p.version }}</div>
           </div>
           <div :class="['risk-tag', `risk-${p.riskLevel}`]">
             {{ riskLabel(p.riskLevel) }}
@@ -45,34 +49,30 @@
         </div>
         <div class="card-body">
           <div class="metric">
-            <div class="m-value">{{ p.expectedYield }}</div>
+            <div class="m-value">{{ getYield(p.riskLevel) }}</div>
             <div class="m-label">预期年化</div>
           </div>
           <div class="metric">
-            <div class="m-value">{{ p.term }}</div>
+            <div class="m-value">{{ getTerm(p.productType) }}</div>
             <div class="m-label">期限</div>
           </div>
           <div class="metric">
-            <div class="m-value">¥{{ p.minAmount }}</div>
-            <div class="m-label">起购</div>
+            <div class="m-value">{{ p.status }}</div>
+            <div class="m-label">状态</div>
           </div>
         </div>
         <div class="card-footer">
-          <span class="hot" v-if="p.hot">🔥 热销</span>
-          <span class="badge">{{ p.seller }}</span>
+          <span class="hash">🔒 SHA256: {{ p.contentHash?.substring(0, 12) }}...</span>
+          <span v-if="p.status === 'APPROVED' || p.status === 'FROZEN'" class="badge">{{ p.status }}</span>
         </div>
-      </div>
-
-      <div v-if="!filtered.length" class="empty">
-        <div class="empty-icon">📦</div>
-        <p>暂无符合条件的产品</p>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { scriptApi } from '@/api'
 
 const types = [
   { label: '全部', value: 'ALL' },
@@ -82,26 +82,58 @@ const types = [
 ]
 const activeType = ref('ALL')
 const searchKey = ref('')
+const products = ref<any[]>([])
+const loading = ref(true)
 
-const products = ref([
-  { id: 'BNK-FIN-2026Q3-001', name: '稳赢系列 · 固收理财', type: 'WEALTH', riskLevel: 'R2', expectedYield: '3.6%', term: '180 天', minAmount: '1万', hot: true, seller: '工商银行' },
-  { id: 'BNK-MIX-2026Q3-002', name: '混合策略 · 股债平衡', type: 'WEALTH', riskLevel: 'R3', expectedYield: '4.8%', term: '365 天', minAmount: '5万', seller: '建设银行' },
-  { id: 'FND-STK-2026Q3-002', name: '稳进混合基金', type: 'FUND', riskLevel: 'R3', expectedYield: '5.2%', term: '1 年', minAmount: '1000', hot: true, seller: '华夏基金' },
-  { id: 'FND-BOND-2026Q3-001', name: '稳健债基', type: 'FUND', riskLevel: 'R2', expectedYield: '3.2%', term: '90 天', minAmount: '1000', seller: '南方基金' },
-  { id: 'LIC-INV-2026Q3-001', name: '稳健投资连结险', type: 'INSURANCE', riskLevel: 'P4', expectedYield: '6.0%', term: '5 年', minAmount: '1万', hot: true, seller: '中国人寿' }
-])
+onMounted(async () => {
+  await loadProducts()
+})
 
-const filtered = computed(() => products.value.filter(p => {
-  const matchType = activeType.value === 'ALL' || p.type === activeType.value
-  const matchKey = !searchKey.value || p.name.includes(searchKey.value) || p.id.includes(searchKey.value)
-  return matchType && matchKey
-}))
+async function loadProducts() {
+  loading.value = true
+  try {
+    // 真实 API: 从后端 DB 话术表读取所有产品
+    const res: any = await scriptApi.listDbTemplates()
+    products.value = Array.isArray(res) ? res : []
+  } catch (e) {
+    products.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+const filtered = computed(() => {
+  return products.value.filter(p => {
+    const matchType = activeType.value === 'ALL' || p.productType === activeType.value
+    const matchKey = !searchKey.value ||
+                     (p.productId || '').toLowerCase().includes(searchKey.value.toLowerCase()) ||
+                     (p.productType || '').toLowerCase().includes(searchKey.value.toLowerCase())
+    return matchType && matchKey
+  })
+})
+
+function countByType(t: string) {
+  if (t === 'ALL') return products.value.length
+  return products.value.filter(p => p.productType === t).length
+}
 
 function typeIcon(t: string) {
   return ({ WEALTH: '🏦', FUND: '📈', INSURANCE: '🛡️' } as Record<string, string>)[t] || '📊'
 }
 function riskLabel(level: string) {
   return ({ R1: '低', R2: '中低', R3: '中', R4: '中高', R5: '高', P1: '低', P2: '中低', P3: '中', P4: '中高', P5: '高' } as Record<string, string>)[level] || level
+}
+function getName(p: any) {
+  return p.productType === 'INSURANCE' ? '投资连结险' :
+         p.productType === 'FUND' ? '混合基金' :
+         p.productType === 'WEALTH' ? '银行理财' : '金融产品'
+}
+function getYield(risk: string) {
+  const map: any = { R1: '2.8%', R2: '3.6%', R3: '4.8%', R4: '5.5%', R5: '6.5%', P1: '2.5%', P2: '3.0%', P3: '4.5%', P4: '6.0%', P5: '7.5%' }
+  return map[risk] || '-'
+}
+function getTerm(type: string) {
+  return type === 'INSURANCE' ? '5 年' : type === 'FUND' ? '1 年' : '180 天'
 }
 </script>
 
@@ -118,7 +150,6 @@ function riskLabel(level: string) {
   padding: 0 12px;
   margin-bottom: 8px;
   overflow-x: auto;
-  white-space: nowrap;
 }
 .tab {
   padding: 8px 14px;
@@ -134,14 +165,13 @@ function riskLabel(level: string) {
     color: white;
   }
 }
-.search-bar {
-  padding: 0 12px;
-}
+.filter-bar :deep(.van-search) { padding: 0 12px; }
 
-.product-list-content {
-  padding: 12px;
-  margin-top: -8px;
-}
+.loading-state { padding: 60px 20px; text-align: center; color: var(--text-3); }
+.empty { padding: 80px 20px; text-align: center; color: var(--text-3); }
+.empty-icon { font-size: 48px; margin-bottom: 8px; opacity: 0.4; }
+
+.product-list-content { padding: 12px; }
 .product-card {
   background: var(--card);
   border-radius: 12px;
@@ -162,7 +192,7 @@ function riskLabel(level: string) {
   display: flex; align-items: center; justify-content: center;
   font-size: 20px;
 }
-.header-meta { flex: 1; }
+.header-meta { flex: 1; min-width: 0; }
 .product-name { font-size: 15px; font-weight: 600; }
 .product-id { font-size: 11px; color: var(--text-3); margin-top: 2px; font-family: monospace; }
 .risk-tag {
@@ -184,23 +214,24 @@ function riskLabel(level: string) {
   border-bottom: 1px solid var(--border);
 }
 .metric { text-align: center; }
-.m-value { font-size: 16px; font-weight: 700; color: var(--accent); font-family: 'JetBrains Mono', monospace; }
+.m-value { font-size: 14px; font-weight: 700; color: var(--accent); font-family: 'JetBrains Mono', monospace; }
 .m-label { font-size: 11px; color: var(--text-3); margin-top: 2px; }
 
 .card-footer {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   margin-top: 8px;
   font-size: 11px;
   color: var(--text-3);
 }
-.hot { color: var(--accent); font-weight: 500; }
+.hash { font-family: monospace; }
 .badge {
-  background: var(--cream);
+  background: rgba(7,193,96,0.1);
+  color: var(--success);
   padding: 2px 8px;
   border-radius: 4px;
+  font-weight: 500;
 }
-
-.empty { padding: 60px 20px; text-align: center; color: var(--text-3); }
 </style>

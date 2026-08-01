@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { recordingApi, businessApi, scriptApi } from '@/api'
+import { recordingApi, scriptApi } from '@/api'
 
 // 8 节点定义
 export const NODES = [
@@ -35,9 +35,9 @@ export const useRecordingStore = defineStore('recording', () => {
     recId.value = id
   }
 
-  async function loadScript(productId: string, channel: string) {
+  async function loadScript(productId: string, channel?: string) {
     try {
-      const res: any = await scriptApi.getTemplate(productId, channel)
+      const res: any = await scriptApi.getTemplate(productId)
       // 拼接必播/必问/禁播到完整话术
       const md = res.mandatoryDisclosure || []
       const rq = res.requiredQuestions || []

@@ -61,7 +61,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
-import { businessApi } from '@/api'
+import { recordingApi } from '@/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -74,7 +74,7 @@ const currentNodeIdx = ref(0)
 
 onMounted(async () => {
   try {
-    const res: any = await businessApi.getResumeInfo(token)
+    const res: any = await recordingApi.getResumeInfo(token)
     info.value = res
     // 根据 failedAtNode 推算继续位置
     const map: any = {
