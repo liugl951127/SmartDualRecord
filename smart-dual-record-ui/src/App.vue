@@ -6,6 +6,10 @@ import RecordingWorkbench from '@/components/RecordingWorkbench.vue'
 import OverviewPanel from '@/components/OverviewPanel.vue'
 import ScriptManager from '@/components/ScriptManager.vue'
 import StateMachineViewer from '@/components/StateMachineViewer.vue'
+import RiskAssessmentPanel from '@/components/RiskAssessmentPanel.vue'
+import RecordingCompliancePanel from '@/components/RecordingCompliancePanel.vue'
+import FollowUpPanel from '@/components/FollowUpPanel.vue'
+import EvidencePreservationPanel from '@/components/EvidencePreservationPanel.vue'
 
 const activeTab = ref('workbench')
 const backendOnline = ref(false)
@@ -24,6 +28,10 @@ onMounted(async () => {
 const tabs = [
   { name: 'workbench', label: '录制工作台', icon: 'Microphone' },
   { name: 'create', label: '业务创建', icon: 'Plus' },
+  { name: 'risk', label: '风险评估', icon: 'DataLine' },
+  { name: 'compliance', label: '录像合规', icon: 'VideoCamera' },
+  { name: 'followup', label: '犹豫期回访', icon: 'Bell' },
+  { name: 'preservation', label: '证据保全', icon: 'Lock' },
   { name: 'overview', label: '全景查询', icon: 'DataAnalysis' },
   { name: 'scripts', label: '话术管理', icon: 'Document' },
   { name: 'state', label: '状态机', icon: 'Connection' }
@@ -43,7 +51,7 @@ const tabs = [
           <span class="dot"></span>
           {{ backendOnline ? '后端已连接' : '后端离线' }}
         </span>
-        <span class="badge">v1.0.0</span>
+        <span class="badge">v1.2.0</span>
         <span class="badge">Spring Boot 3 + Vue 3</span>
       </div>
     </header>
@@ -65,6 +73,10 @@ const tabs = [
 
           <BusinessCreate v-if="activeTab === 'create'" @created="activeTab = 'workbench'" />
           <RecordingWorkbench v-else-if="activeTab === 'workbench'" />
+          <RiskAssessmentPanel v-else-if="activeTab === 'risk'" />
+          <RecordingCompliancePanel v-else-if="activeTab === 'compliance'" />
+          <FollowUpPanel v-else-if="activeTab === 'followup'" />
+          <EvidencePreservationPanel v-else-if="activeTab === 'preservation'" />
           <OverviewPanel v-else-if="activeTab === 'overview'" />
           <ScriptManager v-else-if="activeTab === 'scripts'" />
           <StateMachineViewer v-else-if="activeTab === 'state'" :transitions="transitions" />
