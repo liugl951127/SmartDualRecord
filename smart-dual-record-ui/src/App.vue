@@ -7,6 +7,8 @@ import OverviewPanel from '@/components/OverviewPanel.vue'
 import ScriptManager from '@/components/ScriptManager.vue'
 import ScriptConfigWorkbench from '@/components/ScriptConfigWorkbench.vue'
 import ClientPortal from '@/components/ClientPortal.vue'
+import OfflineDualRecord from '@/components/OfflineDualRecord.vue'
+import VideoAICheck from '@/components/VideoAICheck.vue'
 import StateMachineViewer from '@/components/StateMachineViewer.vue'
 import RiskAssessmentPanel from '@/components/RiskAssessmentPanel.vue'
 import RecordingCompliancePanel from '@/components/RecordingCompliancePanel.vue'
@@ -38,6 +40,8 @@ const tabs = [
   { name: 'scripts', label: '话术管理', icon: 'Document' },
   { name: 'config', label: '话术配置', icon: 'Tools' },
   { name: 'client', label: '客户进线', icon: 'UserFilled' },
+  { name: 'offline', label: '线下双录', icon: 'Bank' },
+  { name: 'videoai', label: '视频AI检测', icon: 'Cpu' },
   { name: 'state', label: '状态机', icon: 'Connection' }
 ]
 </script>
@@ -85,6 +89,8 @@ const tabs = [
           <ScriptManager v-else-if="activeTab === 'scripts'" />
           <ScriptConfigWorkbench v-else-if="activeTab === 'config'" />
           <ClientPortal v-else-if="activeTab === 'client'" />
+          <OfflineDualRecord v-else-if="activeTab === 'offline'" />
+          <VideoAICheck v-else-if="activeTab === 'videoai'" />
           <StateMachineViewer v-else-if="activeTab === 'state'" :transitions="transitions" />
         </el-tab-pane>
       </el-tabs>

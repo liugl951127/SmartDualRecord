@@ -68,6 +68,26 @@ public class Business {
     @TableField("archived_at")
     private LocalDateTime archivedAt;
 
+    /** v1.5 跨渠道补录: 线下失败的节点 (01-08), 用于线上从该节点继续 */
+    @TableField("failed_at_node")
+    private String failedAtNode;
+
+    /** v1.5 跨渠道补录: 失败原因 (FORBIDDEN_PHRASE / NO_AFFIRMATIVE / BLACK_FRAME / FACE_MISSING / OTHER) */
+    @TableField("failed_reason")
+    private String failedReason;
+
+    /** v1.5 跨渠道补录: 失败明细 (JSON 字符串) */
+    @TableField("failed_detail")
+    private String failedDetail;
+
+    /** v1.5 跨渠道补录: 线上补录的 token (UUID, 24h 有效) */
+    @TableField("resume_token")
+    private String resumeToken;
+
+    /** v1.5 跨渠道补录: 起始渠道 (OFFLINE / REMOTE_VIDEO / SELF_AI) */
+    @TableField("started_channel")
+    private String startedChannel;
+
     @TableField("deleted")
     private Integer deleted;
 }

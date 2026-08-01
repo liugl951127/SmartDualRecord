@@ -507,4 +507,144 @@ public class RecordingService {
     }
 
     public record NodeResult(String nodeCode, boolean passed, List<ComplianceService.Hit> hits, String error) {}
+
+    // ====================================================================
+    // 13. v1.5 跨渠道补录 (Offline Failed → Online Resume)
+    // ====================================================================
+
+    /**
+     * 线下双录某节点未通过 → 标记 OFFLINE_FAILED + 生成线上补录 token
+     *
+     * @param businessId 业务 ID
+     * @param failedNode 失败的节点 code (NODE_02_DISCLOSURE 等)
+     * @param reason 失败原因 (FORBIDDEN_PHRASE / NO_AFFIRMATIVE / BLACK_FRAME / FACE_MISSING / OTHER)
+     * @param detail 失败明细 (任意 JSON 字符串, 可空)
+     * @return resumeToken (UUID, 24h 有效, 用于线上补录)
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public String markOfflineFailedAndIssueResumeToken(String businessId, String failedNode,
+                                                       String reason, String detail) {
+        Business business = businessRepository.selectOne(
+                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<Business>()
+                        .eq("business_id", businessId));
+        if (business == null) {
+            throw new BusinessException("BUSINESS_NOT_FOUND", "业务不存在: " + businessId);
+        }
+        if (business.getState().isTerminal()) {
+            throw new BusinessException("TERMINAL_STATE", "终态业务不能发起补录: " + business.getState());
+        }
+
+        // 状态机转移 → OFFLINE_FAILED
+        business.setState(RecordingState.OFFLINE_FAILED);
+        business.setFailedAtNode(failedNode);
+        business.setFailedReason(reason);
+        business.setFailedDetail(detail);
+
+        // 生成补录 token (UUID)
+        String token = java.util.UUID.randomUUID().toString().replace("-", "");
+        business.setResumeToken(token);
+        business.setUpdatedAt(LocalDateTime.now());
+        businessRepository.updateById(business);
+
+        // 写事件
+        EventLog event = new EventLog();
+        event.setBusinessId(businessId);
+        event.setEventType("OFFLINE_FAILED");
+        event.setFromState(business.getState().name());
+        event.setToState(RecordingState.OFFLINE_FAILED.name());
+        event.setActorId("system");
+        event.setActorType("SYSTEM");
+        event.setEventData(String.format(
+                "{\"failedNode\":\"%s\",\"reason\":\"%s\",\"resumeToken\":\"%s\"}",
+                failedNode, reason, token));
+        event.setCreatedAt(LocalDateTime.now());
+        eventLogRepository.insert(event);
+
+        log.warn("线下双录失败: businessId={}, node={}, reason={}, token={}",
+                businessId, failedNode, reason, token);
+        return token;
+    }
+
+    /**
+     * 根据 token 查询补录信息 (客户扫码后调用)
+     */
+    public Map<String, Object> getResumeInfoByToken(String token) {
+        Business business = businessRepository.selectOne(
+                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<Business>()
+                        .eq("resume_token", token));
+        if (business == null) {
+            throw new BusinessException("INVALID_TOKEN", "补录 token 无效或已过期");
+        }
+        if (!business.getState().isResumable()) {
+            throw new BusinessException("NOT_RESUMABLE", "该业务状态不允许补录: " + business.getState());
+        }
+        Map<String, Object> info = new java.util.LinkedHashMap<>();
+        info.put("businessId", business.getBusinessId());
+        info.put("productId", business.getProductId());
+        info.put("businessType", business.getBusinessType());
+        info.put("amount", business.getAmount());
+        info.put("customerRiskLevel", business.getRiskLevel());
+        info.put("productRiskLevel", business.getProductRiskLevel());
+        info.put("failedAtNode", business.getFailedAtNode());
+        info.put("failedReason", business.getFailedReason());
+        info.put("failedDetail", business.getFailedDetail());
+        info.put("startedChannel", business.getStartedChannel());
+        info.put("currentState", business.getState());
+        // 节点序号 (从 1 开始)
+        int nodeOrder = nodeCodeToOrder(business.getFailedAtNode());
+        info.put("resumeFromNodeOrder", nodeOrder);
+        info.put("resumeToken", token);
+        return info;
+    }
+
+    /**
+     * 完成线上补录 (客户在 ClientPortal 完成后续节点)
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void completeOnlineResume(String businessId, String token) {
+        Business business = businessRepository.selectOne(
+                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<Business>()
+                        .eq("business_id", businessId)
+                        .eq("resume_token", token));
+        if (business == null) {
+            throw new BusinessException("INVALID_RESUME", "补录信息不匹配");
+        }
+        if (!RecordingState.OFFLINE_FAILED.equals(business.getState())) {
+            throw new BusinessException("INVALID_STATE", "当前状态不允许完成补录: " + business.getState());
+        }
+        // 清除 resume_token, 状态回 RECORDING (从失败节点继续)
+        business.setState(RecordingState.RECORDING);
+        business.setFailedAtNode(null);
+        business.setResumeToken(null);
+        business.setUpdatedAt(LocalDateTime.now());
+        businessRepository.updateById(business);
+
+        // 写事件
+        EventLog event = new EventLog();
+        event.setBusinessId(businessId);
+        event.setEventType("ONLINE_RESUMED");
+        event.setFromState(RecordingState.OFFLINE_FAILED.name());
+        event.setToState(RecordingState.RECORDING.name());
+        event.setActorId("customer");
+        event.setActorType("CUSTOMER");
+        event.setEventData("{\"note\":\"客户通过线上完成补录, 业务恢复正常\"}");
+        event.setCreatedAt(LocalDateTime.now());
+        eventLogRepository.insert(event);
+
+        log.info("线上补录完成: businessId={}", businessId);
+    }
+
+    /**
+     * NodeCode → 节点序号 (1-8)
+     */
+    private int nodeCodeToOrder(String nodeCode) {
+        if (nodeCode == null) return 1;
+        // NODE_01_IDENTITY → 1
+        try {
+            String order = nodeCode.split("_")[1];
+            return Integer.parseInt(order);
+        } catch (Exception e) {
+            return 1;
+        }
+    }
 }

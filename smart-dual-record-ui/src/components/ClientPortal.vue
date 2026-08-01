@@ -19,6 +19,7 @@
  */
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { recordingApi } from '@/api'
 
 // ============================================================================
 // 1. 状态
@@ -34,8 +35,11 @@ const STEPS = [
   { key: 6, title: '完成', desc: '签字 + 犹豫期' }
 ]
 
-// 业务信息 (从 URL ?businessId=BNK20260801-900001 读取)
+// 业务信息 (从 URL ?businessId=BNK20260801-900001 读取, ?token=xxx 用于补录)
 const businessId = ref('BNK20260801-900001')
+const resumeToken = ref<string>('')
+const resumeFromOrder = ref<number>(0)  // 从哪个节点开始 (1-8)
+const resumeReason = ref<string>('')
 const productInfo = ref({
   name: '稳健型封闭式理财',
   code: 'BNK-FIN-2026Q3-001',
@@ -395,6 +399,14 @@ function completeCurrentNode() {
     setTimeout(() => recNodeIdx.value++, 600)
   } else {
     stopRecording()
+    // 如果是补录, 调用后端完成接口
+    if (resumeToken.value) {
+      recordingApi.completeResume(businessId.value, resumeToken.value).then(() => {
+        ElMessage.success('✓ 线上补录完成, 业务已恢复正常')
+      }).catch(e => {
+        ElMessage.warning('补录完成回调失败: ' + e.message)
+      })
+    }
     setTimeout(() => currentStep.value = 6, 1500)
   }
 }
@@ -449,11 +461,28 @@ function prevStep() {
 // ============================================================================
 // 8. 生命周期
 // ============================================================================
-onMounted(() => {
+onMounted(async () => {
   // 解析 URL 参数
   const params = new URLSearchParams(window.location.search)
   if (params.get('businessId')) businessId.value = params.get('businessId')!
   if (params.get('advisor')) advisor.value.name = params.get('advisor')!
+  // v1.5 跨渠道补录: ?token=xxx
+  if (params.get('token')) {
+    resumeToken.value = params.get('token')!
+    try {
+      const info = await recordingApi.getResumeInfo(resumeToken.value)
+      if (info.businessId) businessId.value = info.businessId
+      if (info.productId) productInfo.value.code = info.productId
+      if (info.amount) productInfo.value.amount = info.amount
+      if (info.productRiskLevel) productInfo.value.riskLevel = info.productRiskLevel
+      if (info.customerRiskLevel) riskLevel.value = info.customerRiskLevel
+      if (info.resumeFromNodeOrder) resumeFromOrder.value = info.resumeFromNodeOrder
+      if (info.failedReason) resumeReason.value = info.failedReason
+      ElMessage.warning(`检测到补录请求, 从节点 ${resumeFromOrder.value} 继续`)
+    } catch (e: any) {
+      ElMessage.error('补录 token 无效: ' + e.message)
+    }
+  }
   // 自动启动环境检测
   startEnvCheck()
 })
@@ -476,6 +505,28 @@ watch(riskLevel, (v) => {
         currentStep.value = 1
       })
     }, 500)
+  }
+})
+
+// v1.5 补录: 加载到 token 后直接跳到第 5 步 (录制) 并从对应节点开始
+watch(resumeFromOrder, (o) => {
+  if (o > 0) {
+    currentStep.value = 5
+    // 把 1 ~ (o-1) 标记为已完成
+    const completed = new Set<number>()
+    for (let i = 0; i < o - 1; i++) completed.add(i)
+    recCompleted.value = completed
+    recNodeIdx.value = o - 1
+    // 风评也跳过
+    if (Object.keys(riskAnswers.value).length === 0) {
+      // 模拟已回答 (用 C3 兜底)
+      for (let i = 0; i < RISK_QUESTIONS.length; i++) {
+        riskAnswers.value[RISK_QUESTIONS[i].key] = '20'
+      }
+      riskScore.value = 180
+      riskLevel.value = 'C3'
+    }
+    currentRiskIdx.value = RISK_QUESTIONS.length
   }
 })
 </script>
@@ -508,6 +559,16 @@ watch(riskLevel, (v) => {
     </header>
 
     <main class="cp-main">
+      <!-- v1.5 跨渠道补录提示横幅 -->
+      <el-alert
+        v-if="resumeFromOrder > 0"
+        type="warning"
+        :closable="false"
+        show-icon
+        style="margin-bottom: 16px;"
+        :title="`⚡ 跨渠道补录: 线下双录节点 ${resumeFromOrder} 失败 (${resumeReason}), 已自动跳转到此节点继续`"
+        description="完成剩余节点后, 业务将恢复正常状态"
+      />
       <!-- ============================== -->
       <!-- 步骤 1: 欢迎 + 协议            -->
       <!-- ============================== -->

@@ -59,6 +59,14 @@ public final class RecordingStateMachine {
                         RecordingState.IDENTITY_VERIFIED,
                         RecordingState.RISK_ASSESSED,
                         RecordingState.SCRIPT_LOADED));
+        // v1.5 跨渠道补录: 失败状态可以从原失败节点重新开始录制
+        TRANSITIONS.put(RecordingState.OFFLINE_FAILED,
+                EnumSet.of(RecordingState.RECORDING,
+                        RecordingState.ROLLED_BACK,
+                        RecordingState.INIT,
+                        RecordingState.IDENTITY_VERIFIED,
+                        RecordingState.RISK_ASSESSED,
+                        RecordingState.SCRIPT_LOADED));
         TRANSITIONS.put(RecordingState.ROLLED_BACK, EnumSet.noneOf(RecordingState.class));
         TRANSITIONS.put(RecordingState.AI_QA_PASSED,
                 EnumSet.of(RecordingState.SIGNED, RecordingState.HUMAN_REVIEW));

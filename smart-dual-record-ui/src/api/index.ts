@@ -66,7 +66,19 @@ export const recordingApi = {
 
   customerReplyWantsToCancel: (businessId: string, replyContent: string) =>
     http.post<void>('/recording/followup/wants-to-cancel', null,
-      { params: { businessId, replyContent } })
+      { params: { businessId, replyContent } }),
+
+  // ===== v1.5 跨渠道补录 =====
+  markOfflineFailed: (businessId: string, failedNode: string, reason: string, detail?: string) =>
+    http.post<any>('/recording/offline-failed', null,
+      { params: { businessId, failedNode, reason, detail } }).then(r => r.data),
+
+  getResumeInfo: (token: string) =>
+    http.get<any>('/recording/resume-info/' + token).then(r => r.data),
+
+  completeResume: (businessId: string, token: string) =>
+    http.post<any>('/recording/resume-complete', null,
+      { params: { businessId, token } }).then(r => r.data)
 }
 
 // ===== 话术 =====

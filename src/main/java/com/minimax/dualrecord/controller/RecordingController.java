@@ -174,4 +174,41 @@ public class RecordingController {
         followUpService.customerReplyWantsToCancel(businessId, replyContent);
         return ResponseEntity.noContent().build();
     }
+
+    // ====================================================================
+    // v1.5 跨渠道补录 (Offline Failed → Online Resume)
+    // ====================================================================
+
+    @PostMapping("/offline-failed")
+    @Operation(summary = "线下双录某节点未通过 → 标记 OFFLINE_FAILED + 生成补录 token")
+    public ResponseEntity<Map<String, Object>> markOfflineFailed(
+            @RequestParam String businessId,
+            @RequestParam String failedNode,
+            @RequestParam String reason,
+            @RequestParam(required = false) String detail) {
+        String token = recordingService.markOfflineFailedAndIssueResumeToken(
+                businessId, failedNode, reason, detail);
+        return ResponseEntity.ok(Map.of(
+                "businessId", businessId,
+                "failedAtNode", failedNode,
+                "reason", reason,
+                "resumeToken", token,
+                "resumeUrl", "/client-portal?token=" + token
+        ));
+    }
+
+    @GetMapping("/resume-info/{token}")
+    @Operation(summary = "根据 token 查询补录信息 (客户扫码调用)")
+    public ResponseEntity<Map<String, Object>> getResumeInfo(@PathVariable String token) {
+        return ResponseEntity.ok(recordingService.getResumeInfoByToken(token));
+    }
+
+    @PostMapping("/resume-complete")
+    @Operation(summary = "线上补录完成 (客户在 ClientPortal 完成所有后续节点)")
+    public ResponseEntity<Map<String, Object>> completeResume(
+            @RequestParam String businessId,
+            @RequestParam String token) {
+        recordingService.completeOnlineResume(businessId, token);
+        return ResponseEntity.ok(Map.of("businessId", businessId, "status", "RESUMED"));
+    }
 }

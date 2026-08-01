@@ -24,10 +24,17 @@ CREATE TABLE tb_business (
     created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     archived_at         TIMESTAMP NULL,
+    -- v1.5 跨渠道补录字段
+    failed_at_node      VARCHAR(16) NULL,            -- 线下失败的节点 (01-08)
+    failed_reason       VARCHAR(32) NULL,            -- FORBIDDEN_PHRASE / NO_AFFIRMATIVE / BLACK_FRAME / FACE_MISSING / OTHER
+    failed_detail       TEXT NULL,                   -- 失败明细 JSON
+    resume_token        VARCHAR(64) NULL,            -- 线上补录 token (UUID, 24h 有效)
+    started_channel     VARCHAR(16) NULL,            -- 起始渠道
     deleted             TINYINT NOT NULL DEFAULT 0,
     INDEX idx_business_id (business_id),
     INDEX idx_biz_customer (customer_id_hash),
-    INDEX idx_state (state)
+    INDEX idx_state (state),
+    INDEX idx_resume_token (resume_token)
 );
 
 -- ---------- 2. 录像表（可一对多：跨段）----------

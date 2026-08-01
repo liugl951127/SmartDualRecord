@@ -42,11 +42,14 @@ public enum RecordingState {
     ARCHIVED,
     /** 失败（可恢复） */
     FAILED,
+    /** 线下双录某节点未通过, 等待线上补录 (v1.5 跨渠道补录) */
+    OFFLINE_FAILED,
     /** 已回滚（一致性恢复） */
     ROLLED_BACK;
 
     private static final Set<RecordingState> TERMINAL = EnumSet.of(ARCHIVED, ROLLED_BACK);
-    private static final Set<RecordingState> FAILED_STATES = EnumSet.of(FAILED, ROLLED_BACK);
+    private static final Set<RecordingState> FAILED_STATES = EnumSet.of(FAILED, OFFLINE_FAILED, ROLLED_BACK);
+    private static final Set<RecordingState> RESUMABLE = EnumSet.of(OFFLINE_FAILED, FAILED);
 
     public boolean isTerminal() {
         return TERMINAL.contains(this);
@@ -54,5 +57,10 @@ public enum RecordingState {
 
     public boolean isFailed() {
         return FAILED_STATES.contains(this);
+    }
+
+    /** 是否可恢复 (允许从失败节点继续) */
+    public boolean isResumable() {
+        return RESUMABLE.contains(this);
     }
 }
