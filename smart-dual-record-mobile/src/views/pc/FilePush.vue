@@ -205,7 +205,7 @@ function avatarColor(level: number) {
 </script>
 
 <style lang="scss" scoped>
-@import '@/styles/agent-theme.scss';
+@use '@/styles/agent-theme.scss' as *;
 
 .mb-12 { margin-bottom: 12px; }
 .mt-4 { margin-top: 4px; }

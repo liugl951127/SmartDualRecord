@@ -468,7 +468,7 @@ onUnmounted(() => {
 </script>
 
 <style lang="scss" scoped>
-@import '@/styles/agent-theme.scss';
+@use '@/styles/agent-theme.scss' as *;
 
 .pc-layout {
   display: flex;

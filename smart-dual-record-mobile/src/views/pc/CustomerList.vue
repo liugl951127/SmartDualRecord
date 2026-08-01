@@ -512,7 +512,7 @@ function batchNotify() { alert(`群发 ${selected.value.length} 个客户`) }
 </script>
 
 <style lang="scss" scoped>
-@import '@/styles/agent-theme.scss';
+@use '@/styles/agent-theme.scss' as *;
 
 // ============ 筛选条 ============
 .filter-bar { margin-bottom: 16px; padding: 16px 20px; }

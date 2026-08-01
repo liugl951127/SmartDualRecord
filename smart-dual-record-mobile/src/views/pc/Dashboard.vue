@@ -452,7 +452,7 @@ onUnmounted(() => {
 </script>
 
 <style lang="scss" scoped>
-@import '@/styles/agent-theme.scss';
+@use '@/styles/agent-theme.scss' as *;
 
 .mb-16 { margin-bottom: 16px; }
 

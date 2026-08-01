@@ -9,6 +9,16 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
   },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        // 告诉 Sass 忽略 @import 弃用警告 (Vue 2.x 风格 .vue <style lang="scss"> 仍需 @import)
+        silenceDeprecations: ['legacy-js-api', 'import'],
+        // 用现代编译器 API (Vite 5 推荐)
+        api: 'modern-compiler'
+      }
+    }
+  },
   server: {
     port: 5174,
     host: '0.0.0.0',
