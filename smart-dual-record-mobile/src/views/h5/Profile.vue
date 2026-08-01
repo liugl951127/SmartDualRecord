@@ -27,6 +27,17 @@
       </div>
     </div>
 
+    <div class="card section" @click="onBilateral" style="cursor: pointer;">
+      <div class="bilateral-card">
+        <div class="bc-icon">📞</div>
+        <div class="bc-info">
+          <div class="bc-title">双边录制 (与坐席视频)</div>
+          <div class="bc-desc">实时音视频连接 · 双方各自录制 · 禁播词实时告警</div>
+        </div>
+        <div class="bc-arrow">›</div>
+      </div>
+    </div>
+
     <div class="card section">
       <div class="menu-list">
         <div class="menu-item" @click="onCall('95588')">
@@ -93,6 +104,11 @@ function onTransfer() {
   }).then(() => {
     showToast('正在为您转接...')
   }).catch(() => {})
+}
+
+function onBilateral() {
+  const bid = `BIZ-${Date.now()}`
+  router.push(`/h5/bilateral/${bid}`)
 }
 
 function onLogout() {
@@ -165,4 +181,22 @@ function onLogout() {
   box-shadow: 0 1px 4px rgba(0,0,0,0.05);
   &:active { opacity: 0.7; }
 }
+
+.bilateral-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  &:active { opacity: 0.7; }
+}
+.bc-icon {
+  width: 48px; height: 48px;
+  background: linear-gradient(135deg, #1e2a47, #2c3a5c);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+}
+.bc-info { flex: 1; }
+.bc-title { font-size: 14px; font-weight: 600; }
+.bc-desc { font-size: 11px; color: var(--text-3); margin-top: 4px; }
+.bc-arrow { color: var(--text-3); font-size: 20px; }
 </style>

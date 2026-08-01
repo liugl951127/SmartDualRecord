@@ -26,6 +26,7 @@ const router = createRouter({
         { path: 'risk', component: () => import('@/views/h5/RiskAssessment.vue'), meta: { title: '风险评估' } },
         { path: 'order', component: () => import('@/views/h5/OrderConfirm.vue'), meta: { title: '订单确认' } },
         { path: 'record/:businessId', component: () => import('@/views/h5/RecordFlow.vue'), meta: { title: '双录' } },
+        { path: 'bilateral/:businessId', component: () => import('@/views/h5/Bilateral.vue'), meta: { title: '双边录制' } },
         { path: 'orders', component: () => import('@/views/h5/MyOrders.vue'), meta: { title: '我的订单' } },
         { path: 'order/:id', component: () => import('@/views/h5/OrderDetail.vue'), meta: { title: '订单详情' } },
         { path: 'files', component: () => import('@/views/h5/PushedFiles.vue'), meta: { title: '待签文件' } },
@@ -43,7 +44,8 @@ const router = createRouter({
         { path: 'customers', component: () => import('@/views/pc/CustomerList.vue'), meta: { title: '客户列表' } },
         { path: 'record/:businessId', component: () => import('@/views/pc/RecordWorkbench.vue'), meta: { title: '双录工作台' } },
         { path: 'filepush', component: () => import('@/views/pc/FilePush.vue'), meta: { title: '文件推送' } },
-        { path: 'advisor', component: () => import('@/views/pc/Advisor.vue'), meta: { title: '理财经理' } }
+        { path: 'advisor', component: () => import('@/views/pc/Advisor.vue'), meta: { title: '理财经理' } },
+        { path: 'bilateral', component: () => import('@/views/pc/Bilateral.vue'), meta: { title: '双边录制' } }
       ]
     },
     // ==================== 补录通道 ====================

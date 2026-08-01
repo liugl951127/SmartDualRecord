@@ -256,6 +256,8 @@ CREATE TABLE tb_risk_assessment (
     risk_level          VARCHAR(8) NOT NULL,        -- C1-C5
     valid_until         DATE NOT NULL,
     assessed_at         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    date_add            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    date_upd            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `deleted`             TINYINT NOT NULL DEFAULT 0,
     INDEX idx_ra_customer (customer_id_hash),
     INDEX idx_valid (valid_until)

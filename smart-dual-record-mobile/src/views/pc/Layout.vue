@@ -58,12 +58,14 @@ const menus = computed(() => {
   if (auth.user?.role === 'ADVISOR') {
     return [
       { path: '/pc/dashboard', label: '工作台', icon: '📊' },
+      { path: '/pc/bilateral', label: '双边录制', icon: '📞' },
       { path: '/pc/advisor', label: '理财经理', icon: '💎' }
     ]
   }
   return [
     { path: '/pc/dashboard', label: '工作台', icon: '📊' },
     { path: '/pc/customers', label: '客户管理', icon: '👥' },
+    { path: '/pc/bilateral', label: '双边录制', icon: '📞' },
     { path: '/pc/filepush', label: '文件推送', icon: '📤' }
   ]
 })

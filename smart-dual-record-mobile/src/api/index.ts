@@ -120,10 +120,8 @@ export const scriptConfigApi = {
 // ==================== 风险评估 API ====================
 export const riskApi = {
   // 提交评估
-  submit: (data: {
-    customerIdHash: string
-    answers: Record<string, any>
-  }) => http.post('/risk/submit', data),
+  submit: (customerIdHash: string, answers: Record<string, any>) =>
+    http.post('/risk/submit', answers, { params: { customerIdHash } }),
   // 客户最新评估
   latest: (customerIdHash: string) => http.get(`/risk/latest/${customerIdHash}`),
   // 风险匹配

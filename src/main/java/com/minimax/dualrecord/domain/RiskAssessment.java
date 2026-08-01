@@ -47,6 +47,12 @@ public class RiskAssessment {
     @TableField("assessed_at")
     private LocalDateTime assessedAt;
 
+    @TableField("date_add")
+    private LocalDateTime dateAdd;
+
+    @TableField("date_upd")
+    private LocalDateTime dateUpd;
+
     @TableField("deleted")
     private Integer deleted;
 
