@@ -1,0 +1,31 @@
+{
+  "name": "smart-dual-record-mobile",
+  "version": "1.0.0",
+  "description": "Smart Dual Record Mobile & PC Customer Service Portal",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "type-check": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "vue": "^3.4.27",
+    "vue-router": "^4.3.2",
+    "pinia": "^2.1.7",
+    "axios": "^1.7.2",
+    "vant": "^4.9.0",
+    "lib-flexible": "^0.3.2",
+    "echarts": "^5.5.0",
+    "vue-echarts": "^7.0.3"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.4",
+    "typescript": "^5.4.5",
+    "vite": "^5.2.11",
+    "vue-tsc": "^2.0.19",
+    "@types/node": "^20.12.7",
+    "sass": "^1.77.2",
+    "vite-plugin-vue-devtools": "^7.1.0"
+  }
+}
