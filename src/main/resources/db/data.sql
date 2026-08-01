@@ -249,3 +249,62 @@ INSERT INTO tb_preservation_record (id, preservation_id, rec_id, business_id, re
 ('pr-002', 'PR-20260801-002', 'REC20260801-9003', 'LIC20260801-900001', 'auditor-001', 'AUDITOR', '客户投诉进入司法程序 (数字人段)', '北京公证处', 'GZ-2026-002', '2026-07-26 09:30:00',
  'sha256hash2-001', 'c3d4e5f6a7b8c9d0c3d4e5f6a7b8c9d0c3d4e5f6a7b8c9d0c3d4e5f6a7b8c9d0',
  '2031-07-26', 'NOTARIZED', '2026-07-25 18:30:00');
+
+-- 10. 文件推送记录 8 笔 (覆盖 PUSHED/VIEWED/SIGNED/REJECTED 4 状态)
+INSERT INTO tb_pushed_file (id, business_id, file_id, file_name, file_type, file_url, file_size, file_category, pushed_by, pushed_at, viewed_at, signed_at, `status`, signature_data, remark, `deleted`) VALUES
+('pf-001', 'BNK20260801-900003', 'file-9001-brochure', '稳赢3号产品说明书.pdf', 'PDF', 'https://cdn.dualrecord.local/files/bnk-fin-2026q3-001-brochure.pdf', 2457600, 'BROCHURE', 'AGENT-001', '2026-08-01 10:30:00', '2026-08-01 10:35:12', NULL, 'VIEWED', NULL, '客户已查看', 0),
+('pf-002', 'BNK20260801-900003', 'file-9001-disclosure', '风险揭示书.pdf', 'PDF', 'https://cdn.dualrecord.local/files/risk-disclosure-v3.pdf', 1843200, 'DISCLOSURE', 'AGENT-001', '2026-08-01 10:30:00', '2026-08-01 10:36:45', '2026-08-01 10:45:00', 'SIGNED', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...(签名base64)', '客户电子签字确认', 0),
+('pf-003', 'BNK20260801-900003', 'file-9001-contract', '销售合同.pdf', 'PDF', 'https://cdn.dualrecord.local/files/sales-contract-2026q3.pdf', 3145728, 'CONTRACT', 'AGENT-001', '2026-08-01 10:30:00', '2026-08-01 10:38:22', '2026-08-01 10:46:30', 'SIGNED', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...(签名base64)', '合同已签署', 0),
+('pf-004', 'BNK20260801-900003', 'file-9001-idcard', '客户身份证.jpg', 'JPG', 'https://cdn.dualrecord.local/files/cust-001-idcard-front.jpg', 524288, 'ID_CARD', 'SYSTEM', '2026-08-01 10:30:00', '2026-08-01 10:30:05', NULL, 'VIEWED', NULL, '身份证OCR自动核验', 0),
+('pf-005', 'FND20260801-900004', 'file-9004-brochure', '汇理财7日产品介绍.pdf', 'PDF', 'https://cdn.dualrecord.local/files/fnd-mix-7d-brochure.pdf', 1572864, 'BROCHURE', 'AGENT-002', '2026-08-01 10:05:00', NULL, NULL, 'PUSHED', NULL, '已推送待查看', 0),
+('pf-006', 'FND20260801-900004', 'file-9004-disclosure', '理财风险协议.pdf', 'PDF', 'https://cdn.dualrecord.local/files/fnd-disclosure-v3.pdf', 1048576, 'DISCLOSURE', 'AGENT-002', '2026-08-01 10:05:00', NULL, NULL, 'PUSHED', NULL, NULL, 0),
+('pf-007', 'LIC20260801-900001', 'file-9001-policy', '保单条款.pdf', 'PDF', 'https://cdn.dualrecord.local/files/insurance-policy-v2.pdf', 4194304, 'CONTRACT', 'AGENT-003', '2026-07-20 10:55:00', '2026-07-20 11:00:00', NULL, 'REJECTED', NULL, '客户对犹豫期条款有异议, 已拒绝', 0),
+('pf-008', 'LIC20260801-900001', 'file-9001-cooling', '犹豫期回访问卷.pdf', 'PDF', 'https://cdn.dualrecord.local/files/cooling-off-survey.pdf', 786432, 'OTHER', 'SYSTEM', '2026-07-21 09:00:00', '2026-07-21 10:15:00', '2026-07-21 10:30:00', 'SIGNED', 'data:image/png;base64,iVBORw0KGgo...(签名base64)', '犹豫期回访已签字', 0);
+
+-- 11. 录像注释 12 条 (覆盖 8 节点 + 关键事件)
+INSERT INTO tb_recording_annotation (id, rec_id, business_id, annotation_type, node_id, timestamp_ms, note, operator_id, created_at, `deleted`) VALUES
+('ann-001', 'REC20260801-9001', 'BNK20260801-900001', 'NODE_START', '01-IDENTITY', 0, '开始身份核验节点', 'AGENT-001', '2026-07-15 10:00:00', 0),
+('ann-002', 'REC20260801-9001', 'BNK20260801-900001', 'CUSTOMER_AFFIRMATIVE', '01-IDENTITY', 45000, '客户确认身份信息无误', 'AGENT-001', '2026-07-15 10:00:45', 0),
+('ann-003', 'REC20260801-9001', 'BNK20260801-900001', 'NODE_END', '01-IDENTITY', 60000, '身份核验完成', 'AGENT-001', '2026-07-15 10:01:00', 0),
+('ann-004', 'REC20260801-9001', 'BNK20260801-900001', 'NODE_START', '02-RISK_DISCLOSURE', 60000, '开始风险揭示', 'AGENT-001', '2026-07-15 10:01:00', 0),
+('ann-005', 'REC20260801-9001', 'BNK20260801-900001', 'RISK_DISCLOSED', '02-RISK_DISCLOSURE', 180000, '客户已知悉理财不保本风险', 'AGENT-001', '2026-07-15 10:03:00', 0),
+('ann-006', 'REC20260801-9001', 'BNK20260801-900001', 'NODE_END', '02-RISK_DISCLOSURE', 240000, '风险揭示完成', 'AGENT-001', '2026-07-15 10:04:00', 0),
+('ann-007', 'REC20260801-9001', 'BNK20260801-900001', 'MANUAL_FLAG', '02-RISK_DISCLOSURE', 245000, '坐席手动标注: 客户语速偏快, 已要求客户复述', 'AGENT-001', '2026-07-15 10:04:05', 0),
+('ann-008', 'REC20260801-9001', 'BNK20260801-900001', 'NODE_END', '07-SIGN', 720000, '客户完成电子签字', 'AGENT-001', '2026-07-15 10:12:00', 0),
+('ann-009', 'REC20260801-9004', 'FND20260801-900004', 'NODE_START', '04-PRODUCT_INTRO', 360000, '产品介绍开始', 'AGENT-002', '2026-08-01 10:11:00', 0),
+('ann-010', 'REC20260801-9004', 'FND20260801-900004', 'MANUAL_FLAG', '04-PRODUCT_INTRO', 480000, '⚠️ 坐席标注: 客户说"保本吗", 立即纠正并强调非保本', 'AGENT-002', '2026-08-01 10:13:00', 0),
+('ann-011', 'REC20260801-9004', 'FND20260801-900004', 'NODE_START', '07-SIGN', 900000, '进入签字节点', 'AGENT-002', '2026-08-01 10:20:00', 0),
+('ann-012', 'REC20260801-9004', 'FND20260801-900004', 'MANUAL_FLAG', '08-END', 960000, '坐席手动标注: 结束前再次确认客户知晓风险', 'AGENT-002', '2026-08-01 10:21:00', 0);
+
+-- 12. 上传会话 5 笔 (覆盖 IN_PROGRESS/COMPLETED/EXPIRED/FAILED 4 状态)
+INSERT INTO tb_upload_session (id, session_id, business_id, rec_id, channel, total_chunks, uploaded_chunks, chunk_size, total_size_bytes, `status`, started_at, last_chunk_at, completed_at, expires_at, `deleted`) VALUES
+('us-001', 'US-20260801-001', 'BNK20260801-900003', 'REC20260801-9003', 'H5', 8, 8, 5242880, 41943040, 'COMPLETED', '2026-08-01 10:55:00', '2026-08-01 10:58:30', '2026-08-01 10:58:30', '2026-08-08 10:55:00', 0),
+('us-002', 'US-20260801-002', 'FND20260801-900004', 'REC20260801-9004', 'H5', 6, 3, 5242880, 15728640, 'IN_PROGRESS', '2026-08-01 11:00:00', '2026-08-01 11:02:15', NULL, '2026-08-08 11:00:00', 0),
+('us-003', 'US-20260725-001', 'LIC20260801-900001', 'REC20260801-9001', 'PC', 12, 12, 5242880, 62914560, 'COMPLETED', '2026-07-25 18:00:00', '2026-07-25 18:04:30', '2026-07-25 18:04:30', '2026-08-01 18:00:00', 0),
+('us-004', 'US-20260720-001', 'BNK20260801-900001', 'REC20260801-9001', 'H5', 10, 5, 5242880, 26214400, 'EXPIRED', '2026-07-20 10:30:00', '2026-07-20 10:33:00', NULL, '2026-07-27 10:30:00', 0),
+('us-005', 'US-20260801-003', 'BNK20260801-900003', 'REC20260801-9005', 'H5', 4, 1, 5242880, 5242880, 'FAILED', '2026-08-01 11:10:00', '2026-08-01 11:10:30', NULL, '2026-08-08 11:10:00', 0);
+
+-- 13. 录像访问日志 15 条 (覆盖 5 角色 + 5 访问类型, 含 DRM token)
+INSERT INTO tb_recording_access_log (id, rec_id, business_id, user_id, user_role, access_type, duration_sec, ip_address, access_token, accessed_at, `deleted`) VALUES
+('al-001', 'REC20260801-9001', 'LIC20260801-900001', 'cust-hash-001', 'CUSTOMER', 'PLAYBACK', 180, '192.168.1.10', 'drm-token-cust-001-20260801', '2026-07-20 11:00:00', 0),
+('al-002', 'REC20260801-9001', 'LIC20260801-900001', 'cust-hash-001', 'CUSTOMER', 'DOWNLOAD', 0, '192.168.1.10', 'drm-token-cust-001-dl-20260801', '2026-07-20 11:05:00', 0),
+('al-003', 'REC20260801-9001', 'LIC20260801-900001', 'AGENT-001', 'SELLER', 'PLAYBACK', 240, '10.0.5.21', 'drm-token-seller-001-20260801', '2026-07-20 14:30:00', 0),
+('al-004', 'REC20260801-9001', 'LIC20260801-900001', 'auditor-001', 'AUDITOR', 'PLAYBACK', 600, '10.0.10.5', 'drm-token-auditor-001-20260801', '2026-07-25 09:00:00', 0),
+('al-005', 'REC20260801-9001', 'LIC20260801-900001', 'auditor-001', 'AUDITOR', 'SCREENSHOT', 0, '10.0.10.5', 'drm-token-auditor-001-ss-20260801', '2026-07-25 09:15:00', 0),
+('al-006', 'REC20260801-9001', 'LIC20260801-900001', 'auditor-001', 'AUDITOR', 'EXPORT', 0, '10.0.10.5', 'drm-token-auditor-001-ex-20260801', '2026-07-25 09:30:00', 0),
+('al-007', 'REC20260801-9001', 'LIC20260801-900001', 'auditor-001', 'AUDITOR', 'PRESERVE', 0, '10.0.10.5', 'drm-token-auditor-001-pr-20260801', '2026-07-25 18:00:00', 0),
+('al-008', 'REC20260801-9002', 'LIC20260801-900001', 'AGENT-001', 'SELLER', 'PLAYBACK', 320, '10.0.5.21', 'drm-token-seller-002-20260801', '2026-07-20 15:00:00', 0),
+('al-009', 'REC20260801-9002', 'LIC20260801-900001', 'auditor-001', 'AUDITOR', 'PLAYBACK', 480, '10.0.10.5', 'drm-token-auditor-002-20260801', '2026-07-26 09:00:00', 0),
+('al-010', 'REC20260801-9003', 'LIC20260801-900001', 'auditor-001', 'AUDITOR', 'PRESERVE', 0, '10.0.10.5', 'drm-token-auditor-003-20260801', '2026-07-26 09:30:00', 0),
+('al-011', 'REC20260801-9004', 'FND20260801-900004', 'AGENT-002', 'SELLER', 'PLAYBACK', 120, '10.0.5.22', 'drm-token-seller-004-20260801', '2026-08-01 10:25:00', 0),
+('al-012', 'REC20260801-9004', 'FND20260801-900004', 'regulator-001', 'REGULATOR', 'PLAYBACK', 600, '10.0.50.1', 'drm-token-reg-001-20260801', '2026-08-01 11:00:00', 0),
+('al-013', 'REC20260801-9004', 'FND20260801-900004', 'regulator-001', 'REGULATOR', 'EXPORT', 0, '10.0.50.1', 'drm-token-reg-001-ex-20260801', '2026-08-01 11:05:00', 0),
+('al-014', 'REC20260801-9005', 'BNK20260801-900003', 'AGENT-001', 'SELLER', 'PLAYBACK', 60, '10.0.5.21', 'drm-token-seller-005-20260801', '2026-08-01 11:15:00', 0),
+('al-015', 'REC20260801-9005', 'BNK20260801-900003', 'admin-001', 'ADMIN', 'PLAYBACK', 30, '10.0.0.1', 'drm-token-admin-005-20260801', '2026-08-01 11:20:00', 0);
+
+-- 14. 理财经理转接会话 4 笔 (覆盖 PENDING/ACCEPTED/ACTIVE/ENDED 4 状态)
+INSERT INTO tb_advisor_session (id, session_id, business_id, customer_id_hash, customer_name, customer_mobile, advisor_id, advisor_name, advisor_branch, reason, description, `status`, created_at, accepted_at, ended_at, end_reason, `deleted`) VALUES
+('adv-001', 'ADV-20260801-001', 'BNK20260801-900003', 'cust-hash-001', '张志强', '138****1234', 'ADV-001', '王经理', '北京中关村支行', 'PRODUCT_QUESTION', '客户咨询稳赢4号新产品细节, 想了解与3号的差异', 'ACTIVE', '2026-08-01 11:00:00', '2026-08-01 11:00:30', NULL, NULL, 0),
+('adv-002', 'ADV-20260801-002', 'FND20260801-900004', 'cust-hash-002', '王明华', '139****5678', 'ADV-002', '李经理', '上海陆家嘴支行', 'COMPLIANCE_QUERY', '客户C3等级想买R4产品, 需理财经理介入风险揭示', 'PENDING', '2026-08-01 11:15:00', NULL, NULL, NULL, 0),
+('adv-003', 'ADV-20260720-001', 'LIC20260801-900001', 'cust-hash-003', '李雪梅', '136****9012', 'ADV-001', '王经理', '北京中关村支行', 'TECH_ISSUE', '客户H5端摄像头权限被浏览器拦截, 坐席无法协助', 'ENDED', '2026-07-20 14:00:00', '2026-07-20 14:00:45', '2026-07-20 14:25:00', 'TECH_RESOLVED', 0),
+('adv-004', 'ADV-20260725-001', 'LIC20260801-900001', 'cust-hash-003', '李雪梅', '136****9012', 'ADV-003', '赵经理', '北京金融街支行', 'OTHER', '客户犹豫期回访, 咨询退保条款细节', 'ENDED', '2026-07-21 09:00:00', '2026-07-21 09:00:15', '2026-07-21 09:30:00', 'CUSTOMER_SATISFIED', 0);
