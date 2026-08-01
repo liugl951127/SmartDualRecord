@@ -291,7 +291,7 @@ function onSubmit() {
 .footer {
   padding: 16px;
   position: fixed;
-  bottom: 0; left: 0; right: 0;
+  bottom: calc(60px + env(safe-area-inset-bottom, 0px)); left: 0; right: 0;
   background: white;
   border-top: 1px solid var(--border);
 }

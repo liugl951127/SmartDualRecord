@@ -532,7 +532,7 @@ function stopAll() {
 
 .control-bar {
   position: fixed;
-  bottom: 0; left: 0; right: 0;
+  bottom: calc(60px + env(safe-area-inset-bottom, 0px)); left: 0; right: 0;
   background: white;
   padding: 12px 16px 16px;
   border-top: 1px solid var(--border);

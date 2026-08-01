@@ -201,7 +201,7 @@ async function onConfirm() {
 </script>
 
 <style lang="scss" scoped>
-.order-confirm { min-height: 100vh; padding-bottom: 100px; }
+.order-confirm { min-height: 100vh; padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px)); }
 .loading, .loading-inline { padding: 40px 20px; text-align: center; color: var(--text-3); }
 .loading-inline { padding: 16px; font-size: 12px; }
 .empty-state { padding: 60px 20px; text-align: center; color: var(--text-3); }
@@ -276,9 +276,13 @@ async function onConfirm() {
 
 .action-bar {
   position: fixed;
-  bottom: 0; left: 0; right: 0;
+  // 浮在 tabbar 上面 (tabbar 高度 60px + safe area)
+  bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+  left: 0; right: 0;
   background: white;
   padding: 12px 16px;
   border-top: 1px solid var(--border);
+  box-shadow: 0 -2px 12px rgba(60, 40, 20, 0.06);
+  z-index: 99;
 }
 </style>

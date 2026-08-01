@@ -1,10 +1,12 @@
 <template>
   <div class="h5-layout">
-    <router-view v-slot="{ Component }">
-      <transition name="slide" mode="out-in">
-        <component :is="Component" />
-      </transition>
-    </router-view>
+    <div class="h5-content">
+      <router-view v-slot="{ Component }">
+        <transition name="slide" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
+    </div>
 
     <van-tabbar v-model="activeTab" route safe-area-inset-bottom>
       <van-tabbar-item to="/h5/home" icon="home-o">首页</van-tabbar-item>
@@ -35,9 +37,37 @@ watch(() => route.path, (p) => {
   min-height: 100vh;
   background: var(--bg);
 }
+.h5-content {
+  // 给底部 tabbar 留空间 (tabbar 高度 50px + safe area)
+  padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+  min-height: 100vh;
+}
 .slide-enter-active, .slide-leave-active {
   transition: all 0.25s;
 }
 .slide-enter-from { transform: translateX(20px); opacity: 0; }
 .slide-leave-to { transform: translateX(-20px); opacity: 0; }
+
+// Vant Tabbar 主题覆盖
+:deep(.van-tabbar) {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -2px 12px rgba(60, 40, 20, 0.04);
+  height: calc(60px + env(safe-area-inset-bottom, 0px));
+}
+:deep(.van-tabbar-item) {
+  color: var(--ink-3);
+  font-size: 11px;
+  .van-tabbar-item__icon { font-size: 22px; }
+  &.van-tabbar-item--active {
+    color: var(--accent);
+    background: transparent;
+  }
+}
+:deep(.van-tabbar-item__text) {
+  margin-top: 2px;
+  font-weight: 500;
+}
 </style>
