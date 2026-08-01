@@ -97,7 +97,7 @@ CREATE TABLE tb_recording_annotation (
     created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_ann_rec (rec_id),
     INDEX idx_ann_biz (business_id),
-    INDEX idx_ann_type (annotation_type)
+    INDEX idx_ann_type (annotation_type),
     `deleted`       TINYINT NOT NULL DEFAULT 0
 );
 
@@ -116,7 +116,7 @@ CREATE TABLE tb_recording_access_log (
     accessed_at     TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_audit_rec (rec_id),
     INDEX idx_audit_user (user_id),
-    INDEX idx_audit_time (accessed_at)
+    INDEX idx_audit_time (accessed_at),
     `deleted`       TINYINT NOT NULL DEFAULT 0
 );
 
@@ -139,7 +139,7 @@ CREATE TABLE tb_upload_session (
     expires_at      TIMESTAMP NOT NULL,
     INDEX idx_us_sess (session_id),
     INDEX idx_us_biz (business_id),
-    INDEX idx_us_status (`status`)
+    INDEX idx_us_status (`status`),
     `deleted`       TINYINT NOT NULL DEFAULT 0
 );
 
@@ -163,7 +163,7 @@ CREATE TABLE tb_preservation_record (
     created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_pr_rec (rec_id),
     INDEX idx_pr_biz (business_id),
-    INDEX idx_pr_status (`status`)
+    INDEX idx_pr_status (`status`),
     `deleted`       TINYINT NOT NULL DEFAULT 0
 );
 
@@ -219,7 +219,7 @@ CREATE TABLE tb_event (
     actor_type      VARCHAR(16),                    -- SYSTEM / HUMAN / AI
     created_at      TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_evt_business (business_id),
-    INDEX idx_created (created_at)
+    INDEX idx_created (created_at),
     `deleted`       TINYINT NOT NULL DEFAULT 0
 );
 
