@@ -12,10 +12,17 @@ export default defineConfig({
   css: {
     preprocessorOptions: {
       scss: {
-        // 告诉 Sass 忽略 @import 弃用警告 (Vue 2.x 风格 .vue <style lang="scss"> 仍需 @import)
-        silenceDeprecations: ['legacy-js-api', 'import'],
         // 用现代编译器 API (Vite 5 推荐)
-        api: 'modern-compiler'
+        api: 'modern-compiler',
+        // 安静所有 Sass 弃用警告 (legacy-js-api / import / global-builtin / color-functions)
+        silenceDeprecations: [
+          'legacy-js-api',
+          'import',
+          'global-builtin',
+          'color-functions'
+        ],
+        // 把 src/styles 加进 sass 搜索路径, 兼容老的 @import 'agent-theme' 写法
+        loadPaths: [fileURLToPath(new URL('./src/styles', import.meta.url))]
       }
     }
   },
