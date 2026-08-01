@@ -73,7 +73,7 @@ INSERT INTO tb_forbidden_phrase (id, phrase, severity, product_types, regulation
 ('fp-060', '国家级安全', 'MEDIUM', 'ALL', '广告法-第二十八条');
 
 -- 2. 话术模板 5 个 (覆盖 3 族 5 产品)
-INSERT INTO tb_script_template (id, product_id, product_type, version, risk_level, mandatory_disclosure, forbidden_phrases, required_questions, channel_overrides, content_hash, status, approved_by, approved_at) VALUES
+INSERT INTO tb_script_template (id, product_id, product_type, version, risk_level, mandatory_disclosure, forbidden_phrases, required_questions, channel_overrides, content_hash, `status`, approved_by, approved_at) VALUES
 -- 投连险 P5
 ('st-001', 'LIC-INV-2026Q3-001', 'INSURANCE', '2026Q3-R1', 'P5',
  '["本产品属于投资连结型保险, 投资部分回报具有不确定性", "可能低于定期存款或出现本金损失", "保险公司不保证最低收益, 不承诺保本", "犹豫期为本合同生效之日起 15 天内, 犹豫期内退保仅扣除不超过 10 元的工本费"]',
@@ -129,7 +129,7 @@ INSERT INTO tb_risk_assessment (id, customer_id_hash, assessment_id, answers_jso
  90.0, 'C5', DATEADD('MONTH', 12, CURRENT_DATE));
 
 -- 4. 测试业务 4 笔 (覆盖不同状态)
-INSERT INTO tb_business (id, business_id, business_type, product_id, customer_id_hash, seller_id_hash, channel, state, current_node, amount, risk_level, product_risk_level, created_at, updated_at, archived_at, deleted) VALUES
+INSERT INTO tb_business (id, business_id, business_type, product_id, customer_id_hash, seller_id_hash, channel, state, current_node, amount, risk_level, product_risk_level, created_at, updated_at, archived_at, `deleted`) VALUES
 -- 已归档 (成功)
 ('biz-001', 'BNK20260801-900001', 'WEALTH', 'BNK-FIN-2026Q3-001', 'cust-hash-001', 'seller-hash-001', 'OFFLINE', 'ARCHIVED', '08-FOLLOWUP', 50000.00, 'C1', 'R2', TIMESTAMP '2026-07-20 10:00:00', TIMESTAMP '2026-07-20 10:45:00', TIMESTAMP '2026-07-20 10:45:00', 0),
 
@@ -143,7 +143,7 @@ INSERT INTO tb_business (id, business_id, business_type, product_id, customer_id
 ('biz-004', 'FND20260801-900004', 'FUND', 'FND-STK-2026Q3-002', 'cust-hash-002', 'seller-hash-001', 'SELF_AI', 'FAILED', '02-DISCLOSURE', 60000.00, 'C3', 'R4', TIMESTAMP '2026-08-01 10:00:00', TIMESTAMP '2026-08-01 10:15:00', NULL, 0);
 
 -- 5. 录像 5 段 (每笔业务 1 段, biz-001/biz-002 含数字人 2 段)
-INSERT INTO tb_recording (id, rec_id, business_id, channel, seller_type, rec_start_utc, rec_end_utc, duration_ms, file_path, file_sha256, file_size_bytes, encryption, blockchain_tx, watermark_visible, audio_id_per_minute, linked_rec_id, location_branch, retention_until, quality_score, quality_status, resolution, fps, audio_bitrate, black_frame_ratio, customer_face_ratio, third_party_count, location_lat, location_lng, ip_address, device_fingerprint, encryption_iv, signed_hash, preservation_id, retention_notified_at, created_at, deleted) VALUES
+INSERT INTO tb_recording (id, rec_id, business_id, channel, seller_type, rec_start_utc, rec_end_utc, duration_ms, file_path, file_sha256, file_size_bytes, encryption, blockchain_tx, watermark_visible, audio_id_per_minute, linked_rec_id, location_branch, retention_until, quality_score, quality_status, resolution, fps, audio_bitrate, black_frame_ratio, customer_face_ratio, third_party_count, location_lat, location_lng, ip_address, device_fingerprint, encryption_iv, signed_hash, preservation_id, retention_notified_at, created_at, `deleted`) VALUES
 -- biz-001 线下录像
 ('rec-001', 'REC20260801-9001', 'BNK20260801-900001', 'OFFLINE', 'HUMAN',
   TIMESTAMP '2026-07-20 10:00:00', TIMESTAMP '2026-07-20 10:45:00', 2700000,
@@ -185,7 +185,7 @@ INSERT INTO tb_recording (id, rec_id, business_id, channel, seller_type, rec_sta
   DATE '2036-08-01', 45, 'FAIL', '1280x720', 20, 32000, 35.00, 65.00, 2, NULL, NULL, '10.0.0.7', 'dev-ai-002', 'iv-005', 'sig-005', NULL, NULL, TIMESTAMP '2026-08-01 10:00:00', 0);
 
 -- 6. 节点明细 (biz-001 8 节点全部完成)
-INSERT INTO tb_rec_node (id, business_id, rec_id, node_id, node_name, start_utc, end_utc, duration_ms, completed, evidence_ts, operator_id, deleted) VALUES
+INSERT INTO tb_rec_node (id, business_id, rec_id, node_id, node_name, start_utc, end_utc, duration_ms, completed, evidence_ts, operator_id, `deleted`) VALUES
 ('nd-001', 'BNK20260801-900001', 'REC20260801-9001', '01-IDENTITY', '身份核验', TIMESTAMP '2026-07-20 10:00:00', TIMESTAMP '2026-07-20 10:02:00', 120000, 1, TIMESTAMP '2026-07-20 10:02:00', 'seller-hash-001', 0),
 ('nd-002', 'BNK20260801-900001', 'REC20260801-9001', '02-DISCLOSURE', '风险揭示', TIMESTAMP '2026-07-20 10:02:00', TIMESTAMP '2026-07-20 10:08:00', 360000, 1, TIMESTAMP '2026-07-20 10:08:00', 'seller-hash-001', 0),
 ('nd-003', 'BNK20260801-900001', 'REC20260801-9001', '03-PRODUCT', '产品展示', TIMESTAMP '2026-07-20 10:08:00', TIMESTAMP '2026-07-20 10:18:00', 600000, 1, TIMESTAMP '2026-07-20 10:18:00', 'seller-hash-001', 0),
@@ -203,7 +203,7 @@ INSERT INTO tb_rec_node (id, business_id, rec_id, node_id, node_name, start_utc,
 ('nd-013', 'BNK20260801-900003', 'REC20260801-9004', '05-TRUTH_TELL', '如实告知', TIMESTAMP '2026-08-01 09:22:00', TIMESTAMP '2026-08-01 09:25:00', 180000, 1, TIMESTAMP '2026-08-01 09:25:00', 'seller-hash-003', 0);
 
 -- 7. 质检结果 1 笔 (biz-001)
-INSERT INTO tb_qa_result (id, qa_id, rec_id, business_id, checker_type, ai_model_version, ai_qa_score, ai_qa_result, issues_json, human_reviewer_id, human_review_status, rectification_status, check_time, deleted) VALUES
+INSERT INTO tb_qa_result (id, qa_id, rec_id, business_id, checker_type, ai_model_version, ai_qa_score, ai_qa_result, issues_json, human_reviewer_id, human_review_status, rectification_status, check_time, `deleted`) VALUES
 ('qa-001', 'QA20260720-0001', 'REC20260801-9001', 'BNK20260801-900001', 'AI_PLUS_HUMAN', 'qa-llm-v3.2.0', 92.50, 'PASS_WITH_FINDINGS',
  '[{"type":"LATE_DISCLOSURE","severity":"LOW","nodeId":"02-DISCLOSURE","regulation":"金发8号-第二十一条"}]',
  'auditor-001', 'CONFIRMED', 'NO_NEED', TIMESTAMP '2026-07-20 10:50:00', 0);
@@ -241,7 +241,7 @@ INSERT INTO tb_event (id, business_id, event_type, from_state, to_state, actor_i
 ('evt-025', 'BNK20260801-900001', 'SCHEDULED_FOLLOW_UP', 'ARCHIVED', 'ARCHIVED', 'SYSTEM', 'SYSTEM', '{"phase":"D+1","day":1,"scheduled_at":"2026-07-21","template":"保单摘要推送"}', TIMESTAMP '2026-07-20 10:55:30');
 
 -- 9. 证据保全记录 2 笔 (rec-002 + rec-003 已公证)
-INSERT INTO tb_preservation_record (id, preservation_id, rec_id, business_id, requester_id, requester_role, reason, notary_org, notary_cert_no, preserved_at, preservation_hash, file_sha256, expires_at, status, created_at) VALUES
+INSERT INTO tb_preservation_record (id, preservation_id, rec_id, business_id, requester_id, requester_role, reason, notary_org, notary_cert_no, preserved_at, preservation_hash, file_sha256, expires_at, `status`, created_at) VALUES
 ('pr-001', 'PR-20260801-001', 'REC20260801-9002', 'LIC20260801-900001', 'auditor-001', 'AUDITOR', '客户投诉进入司法程序', '北京公证处', 'GZ-2026-001', TIMESTAMP '2026-07-26 09:00:00',
  'sha256hash1-001', 'b2c4e6f8a3f5d2e8b2c4e6f8a3f5d2e8b2c4e6f8a3f5d2e8b2c4e6f8a3f5d2e8',
  TIMESTAMP '2031-07-26', 'NOTARIZED', TIMESTAMP '2026-07-25 18:00:00'),

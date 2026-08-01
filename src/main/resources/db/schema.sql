@@ -30,7 +30,7 @@ CREATE TABLE tb_business (
     failed_detail       TEXT NULL,                   -- 失败明细 JSON
     resume_token        VARCHAR(64) NULL,            -- 线上补录 token (UUID, 24h 有效)
     started_channel     VARCHAR(16) NULL,            -- 起始渠道
-    deleted             TINYINT NOT NULL DEFAULT 0,
+    `deleted`             TINYINT NOT NULL DEFAULT 0,
     INDEX idx_business_id (business_id),
     INDEX idx_biz_customer (customer_id_hash),
     INDEX idx_state (state),
@@ -76,7 +76,7 @@ CREATE TABLE tb_recording (
     preservation_id     VARCHAR(64),                  -- 证据保全 ID
     retention_notified_at TIMESTAMP,                  -- 到期通知时间
     created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted         TINYINT NOT NULL DEFAULT 0,
+    `deleted`         TINYINT NOT NULL DEFAULT 0,
     INDEX idx_rec_business (business_id),
     INDEX idx_rec_rec (rec_id),
     INDEX idx_rec_quality (quality_status),
@@ -98,7 +98,8 @@ CREATE TABLE tb_recording_annotation (
     INDEX idx_ann_rec (rec_id),
     INDEX idx_ann_biz (business_id),
     INDEX idx_ann_type (annotation_type)
-    deleted         TINYINT NOT NULL DEFAULT 0,);
+    `deleted`       TINYINT NOT NULL DEFAULT 0
+);
 
 -- ---------- 2.2 录像访问审计日志 (谁看了 + 多久 + 操作) ----------
 DROP TABLE IF EXISTS tb_recording_access_log;
@@ -116,7 +117,8 @@ CREATE TABLE tb_recording_access_log (
     INDEX idx_audit_rec (rec_id),
     INDEX idx_audit_user (user_id),
     INDEX idx_audit_time (accessed_at)
-    deleted         TINYINT NOT NULL DEFAULT 0,);
+    `deleted`       TINYINT NOT NULL DEFAULT 0
+);
 
 -- ---------- 2.3 断点续传 Session ----------
 DROP TABLE IF EXISTS tb_upload_session;
@@ -130,15 +132,16 @@ CREATE TABLE tb_upload_session (
     uploaded_chunks INT NOT NULL DEFAULT 0,
     chunk_size      INT NOT NULL DEFAULT 5242880,    -- 5MB
     total_size_bytes BIGINT,
-    status          VARCHAR(16) NOT NULL DEFAULT 'IN_PROGRESS',  -- IN_PROGRESS / COMPLETED / EXPIRED / FAILED
+    `status`          VARCHAR(16) NOT NULL DEFAULT 'IN_PROGRESS',  -- IN_PROGRESS / COMPLETED / EXPIRED / FAILED
     started_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_chunk_at   TIMESTAMP,
     completed_at    TIMESTAMP,
     expires_at      TIMESTAMP NOT NULL,
     INDEX idx_us_sess (session_id),
     INDEX idx_us_biz (business_id),
-    INDEX idx_us_status (status)
-    deleted         TINYINT NOT NULL DEFAULT 0,);
+    INDEX idx_us_status (`status`)
+    `deleted`       TINYINT NOT NULL DEFAULT 0
+);
 
 -- ---------- 2.4 证据保全记录 (司法/公证) ----------
 DROP TABLE IF EXISTS tb_preservation_record;
@@ -156,12 +159,13 @@ CREATE TABLE tb_preservation_record (
     preservation_hash   VARCHAR(128) NOT NULL,        -- 保全 hash
     file_sha256         VARCHAR(128),
     expires_at          TIMESTAMP,                    -- 保全有效期
-    status              VARCHAR(16) NOT NULL,        -- SUBMITTED / NOTARIZED / REJECTED / EXPIRED
+    `status`              VARCHAR(16) NOT NULL,        -- SUBMITTED / NOTARIZED / REJECTED / EXPIRED
     created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_pr_rec (rec_id),
     INDEX idx_pr_biz (business_id),
-    INDEX idx_pr_status (status)
-    deleted         TINYINT NOT NULL DEFAULT 0,);
+    INDEX idx_pr_status (`status`)
+    `deleted`       TINYINT NOT NULL DEFAULT 0
+);
 
 -- ---------- 3. 录像节点明细（8 节点各 1 条）----------
 DROP TABLE IF EXISTS tb_rec_node;
@@ -177,7 +181,7 @@ CREATE TABLE tb_rec_node (
     completed       TINYINT(1) NOT NULL DEFAULT 0,
     evidence_ts     TIMESTAMP(3),                   -- 证据时间戳
     operator_id     VARCHAR(64),
-    deleted         TINYINT NOT NULL DEFAULT 0,
+    `deleted`         TINYINT NOT NULL DEFAULT 0,
     UNIQUE KEY uk_business_node (business_id, rec_id, node_id)
 );
 
@@ -197,7 +201,7 @@ CREATE TABLE tb_qa_result (
     human_review_status VARCHAR(32),
     rectification_status VARCHAR(32),
     check_time          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted             TINYINT NOT NULL DEFAULT 0,
+    `deleted`             TINYINT NOT NULL DEFAULT 0,
     INDEX idx_qa_business (business_id),
     INDEX idx_qa_rec (rec_id)
 );
@@ -216,7 +220,8 @@ CREATE TABLE tb_event (
     created_at      TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_evt_business (business_id),
     INDEX idx_created (created_at)
-    deleted         TINYINT NOT NULL DEFAULT 0,);
+    `deleted`       TINYINT NOT NULL DEFAULT 0
+);
 
 -- ---------- 6. 话术模板表 ----------
 DROP TABLE IF EXISTS tb_script_template;
@@ -231,11 +236,11 @@ CREATE TABLE tb_script_template (
     required_questions  TEXT,                       -- JSON array
     channel_overrides   TEXT,                       -- JSON
     content_hash        VARCHAR(128),               -- 跨渠道 hash 校验
-    status              VARCHAR(16) NOT NULL DEFAULT 'DRAFT',  -- DRAFT / APPROVED / FROZEN
+    `status`              VARCHAR(16) NOT NULL DEFAULT 'DRAFT',  -- DRAFT / APPROVED / FROZEN
     approved_by         VARCHAR(64),
     approved_at         TIMESTAMP,
     created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted             TINYINT NOT NULL DEFAULT 0,
+    `deleted`             TINYINT NOT NULL DEFAULT 0,
     UNIQUE KEY uk_product_version (product_id, version)
 );
 
@@ -251,7 +256,7 @@ CREATE TABLE tb_risk_assessment (
     risk_level          VARCHAR(8) NOT NULL,        -- C1-C5
     valid_until         DATE NOT NULL,
     assessed_at         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted             TINYINT NOT NULL DEFAULT 0,
+    `deleted`             TINYINT NOT NULL DEFAULT 0,
     INDEX idx_ra_customer (customer_id_hash),
     INDEX idx_valid (valid_until)
 );
@@ -265,7 +270,7 @@ CREATE TABLE tb_forbidden_phrase (
     product_types   VARCHAR(256),                  -- 适用产品类型，逗号分隔；ALL=全适用
     regulation_ref  VARCHAR(256),
     created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted         TINYINT NOT NULL DEFAULT 0,
+    `deleted`         TINYINT NOT NULL DEFAULT 0,
     UNIQUE KEY uk_phrase (phrase)
 );
 
@@ -285,12 +290,12 @@ CREATE TABLE tb_pushed_file (
     viewed_at       TIMESTAMP,
     signed_at       TIMESTAMP,
     rejected_at     TIMESTAMP,
-    status          VARCHAR(16) NOT NULL DEFAULT 'PUSHED',  -- PUSHED / VIEWED / SIGNED / REJECTED
+    `status`          VARCHAR(16) NOT NULL DEFAULT 'PUSHED',  -- PUSHED / VIEWED / SIGNED / REJECTED
     signature_data  TEXT,                            -- 客户签字 base64
     remark          VARCHAR(512),
-    deleted         TINYINT NOT NULL DEFAULT 0,
+    `deleted`         TINYINT NOT NULL DEFAULT 0,
     INDEX idx_pf_business (business_id),
-    INDEX idx_pf_status (status)
+    INDEX idx_pf_status (`status`)
 );
 
 -- ---------- 10. 客户-理财经理会话表 (v1.5 H5 → PC 转接) ----------
@@ -307,13 +312,13 @@ CREATE TABLE tb_advisor_session (
     advisor_branch  VARCHAR(128),
     reason          VARCHAR(32),                -- TECH_ISSUE / PRODUCT_QUESTION / COMPLIANCE_QUERY / OTHER
     description     VARCHAR(512),
-    status          VARCHAR(16) NOT NULL DEFAULT 'PENDING',  -- PENDING / ACCEPTED / DECLINED / ACTIVE / ENDED / TIMEOUT
+    `status`          VARCHAR(16) NOT NULL DEFAULT 'PENDING',  -- PENDING / ACCEPTED / DECLINED / ACTIVE / ENDED / TIMEOUT
     created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     accepted_at     TIMESTAMP,
     ended_at        TIMESTAMP,
     end_reason      VARCHAR(32),
-    deleted         TINYINT NOT NULL DEFAULT 0,
+    `deleted`         TINYINT NOT NULL DEFAULT 0,
     INDEX idx_adv_business (business_id),
     INDEX idx_adv_advisor (advisor_id),
-    INDEX idx_adv_status (status)
+    INDEX idx_adv_status (`status`)
 );
