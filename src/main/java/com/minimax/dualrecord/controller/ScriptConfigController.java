@@ -33,8 +33,20 @@ public class ScriptConfigController {
 
     @GetMapping("/global")
     @Operation(summary = "查询全局默认话术配置")
-    public ResponseEntity<ScriptProperties> globalConfig() {
-        return ResponseEntity.ok(scriptProperties);
+    public ResponseEntity<Map<String, Object>> globalConfig() {
+        // 不能直接返回 ScriptProperties Bean: CGLIB 代理会带 $$beanFactory 字段
+        // Jackson 序列化时炸出 "No serializer found for StandardBeanExpressionResolver"
+        // 解决: 用 Map 显式拷贝字段
+        Map<String, Object> dto = new java.util.LinkedHashMap<>();
+        dto.put("defaultRiskLevel", scriptProperties.getDefaultRiskLevel());
+        dto.put("defaultNodeTimeoutSec", scriptProperties.getDefaultNodeTimeoutSec());
+        dto.put("defaultForbiddenPhrases", scriptProperties.getDefaultForbiddenPhrases());
+        dto.put("defaultRequiredQuestions", scriptProperties.getDefaultRequiredQuestions());
+        dto.put("defaultMandatoryPhrases", scriptProperties.getDefaultMandatoryPhrases());
+        dto.put("defaultChannelOverrides", scriptProperties.getDefaultChannelOverrides());
+        dto.put("productTypeRiskLevel", scriptProperties.getProductTypeRiskLevel());
+        dto.put("placeholders", scriptProperties.getPlaceholders());
+        return ResponseEntity.ok(dto);
     }
 
     @GetMapping("/product/{productId}")
