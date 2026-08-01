@@ -469,7 +469,7 @@ watch(() => businessId, () => {
 <template>
   <div>
     <!-- 顶部: 业务信息 + 录制控制 -->
-    <div class="card">
+    <div class="card recording-header-card">
       <h3 class="card-title">
         <span>
           <span style="display: inline-flex; align-items: center; gap: 6px;">
@@ -478,62 +478,69 @@ watch(() => businessId, () => {
           </span>
         </span>
         <span class="actions">
-          <el-tag v-if="!businessId" type="warning" size="small">未关联业务</el-tag>
-          <el-tag v-else type="info" size="small">{{ businessId }}</el-tag>
-          <el-tag v-if="isRecording" type="danger" size="small">
+          <span v-if="!businessId" class="state-badge warning">未关联业务</span>
+          <span v-else class="state-badge info mono">{{ businessId }}</span>
+          <span v-if="isRecording" class="state-badge danger">
             <span class="rec-dot"></span>REC {{ formattedElapsed }}
-          </el-tag>
+          </span>
         </span>
       </h3>
 
-      <el-row :gutter="16" align="middle">
-        <el-col :span="6">
-          <el-button
+      <div class="recording-control-row">
+        <div class="control-start">
+          <button
             v-if="!isRecording"
-            type="danger"
-            size="large"
-            :icon="'VideoCamera'"
+            class="btn btn-record"
             @click="startRecording"
             :disabled="!businessId"
-            style="width: 100%;"
           >
             <el-icon><VideoCamera /></el-icon>
             开画录制
-          </el-button>
-          <div v-else style="display: flex; gap: 4px;">
-            <el-button :icon="isPaused ? 'VideoPlay' : 'VideoPause'" @click="pauseRecording" size="large" style="flex: 1;">
+          </button>
+          <div v-else class="control-pause-stop">
+            <button class="btn btn-ghost btn-lg" @click="pauseRecording">
+              <el-icon><component :is="isPaused ? 'VideoPlay' : 'VideoPause'" /></el-icon>
               {{ isPaused ? '继续' : '暂停' }}
-            </el-button>
-            <el-button type="warning" @click="stopRecording" size="large" style="flex: 1;">停止</el-button>
+            </button>
+            <button class="btn btn-warning btn-lg" @click="stopRecording">
+              <el-icon><VideoPause /></el-icon>
+              停止
+            </button>
           </div>
-        </el-col>
-        <el-col :span="5">
-          <div class="metric">
+        </div>
+
+        <div class="control-metrics">
+          <div class="metric-card">
             <div class="metric-label">总进度</div>
-            <el-progress :percentage="Math.round(overallProgress)" :stroke-width="14" :color="overallProgress === 100 ? '#2f6f5e' : '#b8860b'" />
+            <div class="progress-bar large">
+              <div class="progress-fill" :style="{ width: Math.round(overallProgress) + '%' }"></div>
+            </div>
+            <div class="metric-value mono">{{ Math.round(overallProgress) }}%</div>
           </div>
-        </el-col>
-        <el-col :span="4">
-          <div class="metric">
+          <div class="metric-card">
             <div class="metric-label">节点</div>
-            <div class="metric-value">{{ completedNodes.size }} / 8</div>
+            <div class="metric-value mono">{{ completedNodes.size }} <span class="text-muted">/ 8</span></div>
           </div>
-        </el-col>
-        <el-col :span="4">
-          <div class="metric">
+          <div class="metric-card">
             <div class="metric-label">禁播词</div>
-            <div class="metric-value" :style="{ color: stats.criticalHits > 0 ? '#c1453a' : '#2f6f5e' }">
-              {{ stats.criticalHits }} 严重 / {{ stats.forbiddenHits }} 全部
+            <div class="metric-value" :class="stats.criticalHits > 0 ? 'text-danger' : 'text-success'">
+              <span class="mono font-bold">{{ stats.criticalHits }}</span>
+              <span class="text-sm text-muted">严重</span>
+              <span class="mono" style="margin-left: 4px;">{{ stats.forbiddenHits }}</span>
+              <span class="text-sm text-muted">全部</span>
             </div>
           </div>
-        </el-col>
-        <el-col :span="5">
-          <el-button @click="downloadRecording" :disabled="!downloadUrl" plain>
-            <el-icon><Download /></el-icon>
-            下载录像 ({{ (recordedBlobs.reduce((s, b) => s + b.size, 0) / 1024 / 1024).toFixed(1) }} MB)
-          </el-button>
-        </el-col>
-      </el-row>
+          <div class="metric-card">
+            <div class="metric-label">录像大小</div>
+            <div class="metric-value mono">{{ (recordedBlobs.reduce((s, b) => s + b.size, 0) / 1024 / 1024).toFixed(1) }} MB</div>
+          </div>
+        </div>
+
+        <button class="btn btn-accent" @click="downloadRecording" :disabled="!downloadUrl">
+          <el-icon><Download /></el-icon>
+          下载录像
+        </button>
+      </div>
     </div>
 
     <!-- 时间轴 -->
@@ -600,12 +607,12 @@ watch(() => businessId, () => {
           <h3 class="card-title">
             <span>实时录制画面</span>
             <span class="actions">
-              <el-tag size="small" :type="hasCamera ? 'success' : 'info'">
-                {{ hasCamera ? '摄像头在线' : '模拟模式' }}
-              </el-tag>
-              <el-tag size="small" :type="micActive ? 'success' : 'info'">
-                {{ micActive ? '麦克风在线' : '麦克风未连接' }}
-              </el-tag>
+              <span class="state-badge" :class="hasCamera ? 'success' : 'info'">
+                <span class="state-dot"></span>{{ hasCamera ? '摄像头在线' : '模拟模式' }}
+              </span>
+              <span class="state-badge" :class="micActive ? 'success' : 'info'">
+                <span class="state-dot"></span>{{ micActive ? '麦克风在线' : '麦克风未连接' }}
+              </span>
             </span>
           </h3>
           <div class="canvas-wrap">
@@ -785,9 +792,108 @@ watch(() => businessId, () => {
 </template>
 
 <style scoped>
+/* ============ 录制控制条 ============ */
+.recording-header-card { padding: 20px 24px; }
+.recording-control-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.control-start {
+  flex-shrink: 0;
+}
+.control-pause-stop {
+  display: flex;
+  gap: 8px;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-record {
+  background: linear-gradient(135deg, #c1453a 0%, #a13328 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(193, 69, 58, 0.3);
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.btn-record:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(193, 69, 58, 0.4);
+}
+.btn-record:disabled { box-shadow: none; }
+.btn-warning {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+  color: white;
+  box-shadow: 0 2px 6px rgba(192, 133, 82, 0.3);
+}
+.btn-warning:hover:not(:disabled) { box-shadow: var(--shadow-accent); transform: translateY(-1px); }
+.btn-accent {
+  background: var(--accent-gradient);
+  color: white;
+  box-shadow: 0 2px 6px rgba(192, 133, 82, 0.25);
+  &:hover:not(:disabled) { box-shadow: var(--shadow-accent); transform: translateY(-1px); }
+  &:disabled { opacity: 0.4; }
+}
+.btn-ghost {
+  background: white;
+  color: var(--ink-2);
+  border-color: var(--line);
+  &:hover { background: var(--bg-2); color: var(--ink); }
+}
+.btn-lg { padding: 12px 20px; }
+
+.control-metrics {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1.2fr 1fr;
+  gap: 12px;
+  min-width: 480px;
+}
+.metric-card {
+  padding: 12px 14px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius);
+  transition: all 0.2s;
+  &:hover { background: white; border-color: var(--line); }
+}
+.metric-label {
+  font-size: 10px;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.metric-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.progress-bar.large { height: 8px; margin: 6px 0 4px; }
+
+@media (max-width: 1200px) {
+  .recording-control-row { flex-direction: column; align-items: stretch; }
+  .control-metrics { grid-template-columns: 1fr 1fr; }
+}
+.state-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: currentColor; margin-right: 4px; }
+
 .metric { padding: 8px 12px; background: var(--bg-2); border-radius: 6px; }
-.metric-label { font-size: 11px; color: var(--ink-3); margin-bottom: 4px; }
-.metric-value { font-size: 18px; font-weight: 700; }
 
 .status-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--ink-3); }
 .status-dot.recording { background: var(--accent-2); animation: pulse 1s ease-in-out infinite; }
