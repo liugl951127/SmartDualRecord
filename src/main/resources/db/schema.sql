@@ -53,7 +53,7 @@ CREATE TABLE tb_recording (
     retention_until DATE,
     -- v1.2 录像合规增强字段
     quality_score       INT,                          -- 质量总分 0-100
-    quality_status      VARCHAR(16),                  -- PASS / PASS_WITH_FINDINGS / FAIL
+    quality_status      VARCHAR(32),                  -- PASS / PASS_WITH_FINDINGS / FAIL
     resolution          VARCHAR(16),                  -- 1920x1080 / 1280x720
     fps                 INT,                          -- 帧率
     audio_bitrate       INT,                          -- 比特率 bps
