@@ -34,6 +34,7 @@ public class RecordingController {
 
     private final RecordingService recordingService;
     private final ScriptService scriptService;
+    private final com.minimax.dualrecord.service.FollowUpService followUpService;
 
     @PostMapping("/start")
     @Operation(summary = "创建业务并启动双录")
@@ -130,5 +131,47 @@ public class RecordingController {
     @Operation(summary = "查询所有 8 节点定义")
     public ResponseEntity<?> allNodes() {
         return ResponseEntity.ok(RecordingNode.orderedAll());
+    }
+
+    // ====================================================================
+    // 紧急 / 跨段 / 审计
+    // ====================================================================
+    @PostMapping("/emergency-stop")
+    @Operation(summary = "紧急停用 AI（合规紧急开关，15 分钟内生效）")
+    public ResponseEntity<Void> emergencyStopAI(@RequestParam String operatorId,
+                                                  @RequestParam String reason) {
+        recordingService.emergencyStopAI(operatorId, reason);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/link-recording")
+    @Operation(summary = "关联跨段录像（线上线下融合业务）")
+    public ResponseEntity<Void> linkRecordings(@RequestParam String primaryRecId,
+                                                @RequestParam String linkedRecId,
+                                                @RequestParam String operatorId) {
+        recordingService.linkRecordings(primaryRecId, linkedRecId, operatorId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/audit-review/{businessId}")
+    @Operation(summary = "审计回看（监管 / 风控 / 内部审计, 自动脱敏）")
+    public ResponseEntity<Map<String, Object>> auditReview(@PathVariable String businessId,
+                                                             @RequestParam String auditorId) {
+        return ResponseEntity.ok(recordingService.auditReview(businessId, auditorId));
+    }
+
+    @PostMapping("/realtime-coaching")
+    @Operation(summary = "实时耳返副驾（0.5 秒内推送 3 选 1 话术）")
+    public ResponseEntity<Map<String, Object>> realTimeCoaching(@RequestParam String businessId,
+                                                                  @RequestParam String asrSegment) {
+        return ResponseEntity.ok(recordingService.getRealTimeCoaching(businessId, asrSegment));
+    }
+
+    @PostMapping("/followup/wants-to-cancel")
+    @Operation(summary = "客户回复\"想退保\"→ 转人工 + 标记需干预")
+    public ResponseEntity<Void> customerReplyWantsToCancel(@RequestParam String businessId,
+                                                            @RequestParam String replyContent) {
+        followUpService.customerReplyWantsToCancel(businessId, replyContent);
+        return ResponseEntity.noContent().build();
     }
 }

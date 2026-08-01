@@ -19,7 +19,17 @@ public interface DeepfakeDetector {
     DetectionResult detect(byte[] videoFrame, byte[] audioChunk);
 
     /**
-     * 4 路分项打分
+     * 4 路分项打分 (旧 API, 等价 detectParallel4Ways)
      */
     DetectionResult detailedDetect(byte[] videoFrame, byte[] audioChunk);
+
+    /**
+     * 4 路并行推理 (新 API)
+     *  - CompletableFuture.allOf 4 路并发
+     *  - 任意一路 ≥ 0.92 强制人工
+     *  - 任意一路 ≥ 0.85 标红
+     *  - 跨模态 ≥ 0.70 强制人工
+     *  - 返回值含 latencyMs (4 路并发总耗时)
+     */
+    DetectionResult detectParallel4Ways(byte[] videoFrame, byte[] audioChunk);
 }

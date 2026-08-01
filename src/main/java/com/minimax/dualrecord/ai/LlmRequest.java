@@ -29,4 +29,10 @@ public class LlmRequest {
     private Double temperature;
     /** 是否需要 JSON 输出 */
     private Boolean jsonMode;
+    /** 客户 ID hash (用于审计, 不传给 LLM) */
+    private String customerIdHash;
+    /** 是否启用敏感数据脱敏 (默认 true) */
+    private Boolean maskSensitive;
+    /** 合规依据 (生成到 LlmResponse.regulationRef) */
+    private String regulationRef;
 }

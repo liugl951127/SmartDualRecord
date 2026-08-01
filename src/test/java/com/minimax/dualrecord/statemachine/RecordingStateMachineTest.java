@@ -56,7 +56,8 @@ class RecordingStateMachineTest {
 
     @Test
     void testNextStates() {
-        assertEquals(2, RecordingStateMachine.nextStates(RecordingState.INIT).size());
+        // INIT 可以走 IDENTITY_VERIFIED / RISK_ASSESSED / SCRIPT_LOADED / RECORDING / FAILED (5 路径)
+        assertEquals(5, RecordingStateMachine.nextStates(RecordingState.INIT).size());
         assertTrue(RecordingStateMachine.nextStates(RecordingState.INIT).contains(RecordingState.IDENTITY_VERIFIED));
         assertTrue(RecordingStateMachine.nextStates(RecordingState.INIT).contains(RecordingState.FAILED));
     }

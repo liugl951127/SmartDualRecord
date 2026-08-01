@@ -26,7 +26,7 @@ CREATE TABLE tb_business (
     archived_at         TIMESTAMP NULL,
     deleted             TINYINT NOT NULL DEFAULT 0,
     INDEX idx_business_id (business_id),
-    INDEX idx_customer (customer_id_hash),
+    INDEX idx_biz_customer (customer_id_hash),
     INDEX idx_state (state)
 );
 
@@ -53,8 +53,8 @@ CREATE TABLE tb_recording (
     retention_until DATE,
     created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted         TINYINT NOT NULL DEFAULT 0,
-    INDEX idx_business (business_id),
-    INDEX idx_rec (rec_id)
+    INDEX idx_rec_business (business_id),
+    INDEX idx_rec_rec (rec_id)
 );
 
 -- ---------- 3. 录像节点明细（8 节点各 1 条）----------
@@ -72,8 +72,7 @@ CREATE TABLE tb_rec_node (
     evidence_ts     TIMESTAMP(3),                   -- 证据时间戳
     operator_id     VARCHAR(64),
     deleted         TINYINT NOT NULL DEFAULT 0,
-    UNIQUE KEY uk_business_node (business_id, rec_id, node_id),
-    INDEX idx_business (business_id)
+    UNIQUE KEY uk_business_node (business_id, rec_id, node_id)
 );
 
 -- ---------- 4. 质检结果表 ----------
@@ -93,8 +92,8 @@ CREATE TABLE tb_qa_result (
     rectification_status VARCHAR(32),
     check_time          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted             TINYINT NOT NULL DEFAULT 0,
-    INDEX idx_business (business_id),
-    INDEX idx_rec (rec_id)
+    INDEX idx_qa_business (business_id),
+    INDEX idx_qa_rec (rec_id)
 );
 
 -- ---------- 5. 事件流（事件溯源）----------
@@ -109,7 +108,7 @@ CREATE TABLE tb_event (
     actor_id        VARCHAR(64),
     actor_type      VARCHAR(16),                    -- SYSTEM / HUMAN / AI
     created_at      TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_business (business_id),
+    INDEX idx_evt_business (business_id),
     INDEX idx_created (created_at)
 );
 
@@ -147,7 +146,7 @@ CREATE TABLE tb_risk_assessment (
     valid_until         DATE NOT NULL,
     assessed_at         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted             TINYINT NOT NULL DEFAULT 0,
-    INDEX idx_customer (customer_id_hash),
+    INDEX idx_ra_customer (customer_id_hash),
     INDEX idx_valid (valid_until)
 );
 

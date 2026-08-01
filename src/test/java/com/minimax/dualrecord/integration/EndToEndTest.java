@@ -25,6 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 完整跑一遍：创建业务 → 加载话术 → 风险评估 → 8 节点 → 终检 → 签字
  */
 @SpringBootTest
+@org.springframework.test.context.ActiveProfiles("sandbox")
 class EndToEndTest {
 
     @Autowired

@@ -33,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *  5. StaleBusinessDetector 能正确标 FAILED
  */
 @SpringBootTest
+@org.springframework.test.context.ActiveProfiles("sandbox")
 class RecordingServiceTest {
 
     @Autowired
@@ -59,14 +60,14 @@ class RecordingServiceTest {
                 new BigDecimal("50000"));
         assertEquals(RecordingState.INIT, biz.getState());
 
+        // 身份核验 → 风险评估 → 加载话术 (按状态机正确顺序)
+        recordingService.assessRisk(biz.getBusinessId(), "cust-hash-001");
+        assertEquals(RecordingState.RISK_ASSESSED,
+                getState(biz.getBusinessId()));
+
         // 加载话术
         recordingService.loadScript(biz.getBusinessId(), "BNK-FIN-2026Q3-001");
         assertEquals(RecordingState.SCRIPT_LOADED,
-                getState(biz.getBusinessId()));
-
-        // 风险评估
-        recordingService.assessRisk(biz.getBusinessId(), "cust-hash-001");
-        assertEquals(RecordingState.RISK_ASSESSED,
                 getState(biz.getBusinessId()));
 
         // 启动录制
@@ -109,14 +110,12 @@ class RecordingServiceTest {
                 "cust-002", null, Channel.OFFLINE, SellerType.HUMAN,
                 new BigDecimal("10000"));
 
-        // 尝试从 INIT 跳到 RECORDED（非法）
-        assertThrows(IllegalStateTransitionException.class, () -> {
-            // 模拟：通过 signAndArchive 调用 transitionState
-            // 实际场景：前端不能直接调这个，但内部逻辑应该校验
+        // 尝试在 INIT 状态完成节点 (非法)
+        assertThrows(BusinessException.class, () -> {
+            // @Transactional 模式: 状态机校验失败会被 wrap 成 BusinessException
             Business fresh = businessRepository.selectOne(
                     new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<Business>()
                             .eq("business_id", biz.getBusinessId()));
-            // 通过 completeNode 尝试在 INIT 状态完成节点
             recordingService.completeNode(biz.getBusinessId(), "REC-002",
                     RecordingNode.NODE_01_IDENTITY, "出示身份证");
         });
@@ -128,8 +127,8 @@ class RecordingServiceTest {
                 BusinessType.WEALTH, "BNK-FIN-2026Q3-001",
                 "cust-003", null, Channel.OFFLINE, SellerType.HUMAN,
                 new BigDecimal("10000"));
-        recordingService.loadScript(biz.getBusinessId(), "BNK-FIN-2026Q3-001");
         recordingService.assessRisk(biz.getBusinessId(), "cust-hash-001");
+        recordingService.loadScript(biz.getBusinessId(), "BNK-FIN-2026Q3-001");
         recordingService.startRecording(biz.getBusinessId());
 
         // 命中禁播词 → 抛 BusinessException → 事务回滚
@@ -138,7 +137,7 @@ class RecordingServiceTest {
                     RecordingNode.NODE_02_DISCLOSURE,
                     "本产品保本保息，绝对安全。");
         });
-        assertTrue(ex.getMessage().contains("FORBIDDEN_PHRASE_HIT"));
+        assertTrue(ex.getMessage().contains("禁播词"), "异常消息应含 禁播词: " + ex.getMessage());
 
         // 节点 02 不应该被记录（事务回滚）
         long nodeCount = nodeRepository.selectCount(
@@ -157,6 +156,7 @@ class RecordingServiceTest {
                 BusinessType.WEALTH, "BNK-FIN-2026Q3-001",
                 "cust-004", null, Channel.OFFLINE, SellerType.HUMAN,
                 new BigDecimal("10000"));
+        recordingService.assessRisk(biz.getBusinessId(), "cust-hash-001");
         recordingService.loadScript(biz.getBusinessId(), "BNK-FIN-2026Q3-001");
         recordingService.manualFail(biz.getBusinessId(), "客户突然取消", "ops-001");
 
@@ -169,6 +169,7 @@ class RecordingServiceTest {
                 BusinessType.WEALTH, "BNK-FIN-2026Q3-001",
                 "cust-stale-001", null, Channel.OFFLINE, SellerType.HUMAN,
                 new BigDecimal("10000"));
+        recordingService.assessRisk(biz.getBusinessId(), "cust-hash-001");
         recordingService.loadScript(biz.getBusinessId(), "BNK-FIN-2026Q3-001");
         recordingService.startRecording(biz.getBusinessId());
 

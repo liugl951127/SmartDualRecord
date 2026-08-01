@@ -27,4 +27,6 @@ public class DetectionResult {
     private String evidence;
     /** 模型版本 */
     private String modelVersion;
+    /** 4 路并行推理总耗时 (ms) */
+    private Long latencyMs;
 }

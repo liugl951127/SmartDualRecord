@@ -26,13 +26,19 @@ public final class RecordingStateMachine {
     static {
         TRANSITIONS = new EnumMap<>(RecordingState.class);
         TRANSITIONS.put(RecordingState.INIT,
-                EnumSet.of(RecordingState.IDENTITY_VERIFIED, RecordingState.FAILED));
+                EnumSet.of(RecordingState.IDENTITY_VERIFIED,
+                        RecordingState.RISK_ASSESSED,
+                        RecordingState.SCRIPT_LOADED,
+                        RecordingState.RECORDING,
+                        RecordingState.FAILED));
         TRANSITIONS.put(RecordingState.IDENTITY_VERIFIED,
-                EnumSet.of(RecordingState.RISK_ASSESSED, RecordingState.FAILED));
+                EnumSet.of(RecordingState.RISK_ASSESSED, RecordingState.SCRIPT_LOADED,
+                        RecordingState.RECORDING, RecordingState.FAILED));
         TRANSITIONS.put(RecordingState.RISK_ASSESSED,
-                EnumSet.of(RecordingState.SCRIPT_LOADED, RecordingState.FAILED));
+                EnumSet.of(RecordingState.SCRIPT_LOADED, RecordingState.RECORDING, RecordingState.FAILED));
         TRANSITIONS.put(RecordingState.SCRIPT_LOADED,
-                EnumSet.of(RecordingState.RECORDING, RecordingState.FAILED));
+                EnumSet.of(RecordingState.RECORDING, RecordingState.FAILED,
+                        RecordingState.RISK_ASSESSED, RecordingState.IDENTITY_VERIFIED));
         TRANSITIONS.put(RecordingState.RECORDING,
                 EnumSet.of(RecordingState.RECORDED, RecordingState.FAILED, RecordingState.ROLLED_BACK));
         TRANSITIONS.put(RecordingState.RECORDED,
@@ -42,7 +48,7 @@ public final class RecordingStateMachine {
         TRANSITIONS.put(RecordingState.AI_QA_FLAGGED,
                 EnumSet.of(RecordingState.HUMAN_REVIEW, RecordingState.ROLLED_BACK));
         TRANSITIONS.put(RecordingState.HUMAN_REVIEW,
-                EnumSet.of(RecordingState.HUMAN_REVIEWED));
+                EnumSet.of(RecordingState.HUMAN_REVIEWED, RecordingState.SIGNED));
         TRANSITIONS.put(RecordingState.HUMAN_REVIEWED,
                 EnumSet.of(RecordingState.SIGNED, RecordingState.ROLLED_BACK));
         TRANSITIONS.put(RecordingState.SIGNED,

@@ -170,6 +170,24 @@ springdoc:
     scan-interval-ms: 300000       # 5 分钟扫一次
     stale-threshold-minutes: 30    # 30 分钟未更新的业务视为孤儿
 
+  # 犹豫期 3 次智能回访调度
+  followup:
+    scan-interval-ms: 3600000      # 1 小时扫一次 (D+1/D+7/D+14 到点执行)
+    d-plus-1: true
+    d-plus-7: true
+    d-plus-14: true
+
+  # 实时耳返副驾
+  realtime-coaching:
+    enabled: true
+    target-latency-ms: 500         # P95 目标 500ms
+    degrade-threshold-ms: 1000     # 超过 1s 自动降级
+
+  # 跨段录像关联
+  cross-segment:
+    enabled: true
+    allow-same-business-only: true # 只允许同一业务的录像关联
+
 # ===== MyBatis-Plus =====
 mybatis-plus:
   configuration:

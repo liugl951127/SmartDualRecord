@@ -24,9 +24,13 @@ class RiskAssessmentServiceTest {
         assertTrue(r1.matched());
         assertFalse(r1.requireSecondaryConfirm());
 
-        // 客户 C4 买 P5 产品 → 匹配
-        var r2 = service.match("C4", "P5");
+        // 客户 C5 买 P5 产品 → 匹配 (C5 = 5 >= P5 = 5)
+        var r2 = service.match("C5", "P5");
         assertTrue(r2.matched());
+
+        // 客户 C4 买 P5 产品 → 不匹配 (4 < 5)
+        var r3 = service.match("C4", "P5");
+        assertFalse(r3.matched());
     }
 
     @Test

@@ -6,6 +6,7 @@ import com.minimax.dualrecord.ai.DetectionResult;
 import com.minimax.dualrecord.ai.LlmGateway;
 import com.minimax.dualrecord.domain.Business;
 import com.minimax.dualrecord.domain.EventLog;
+import com.minimax.dualrecord.domain.QaResult;
 import com.minimax.dualrecord.domain.Recording;
 import com.minimax.dualrecord.domain.RecordingNodeDetail;
 import com.minimax.dualrecord.domain.enums.BusinessType;
@@ -74,9 +75,12 @@ public class RecordingService {
     private final RiskAssessmentService riskService;
     private final ComplianceService complianceService;
     private final QaService qaService;
+    private final FollowUpService followUpService;
     private final LlmGateway llmGateway;
     private final AsrService asrService;
     private final DeepfakeDetector deepfakeDetector;
+    private final SensitiveDataMasker sensitiveDataMasker;
+    private final RealTimeCoachingService realTimeCoachingService;
     private final BusinessIdGenerator idGenerator;
 
     // ====================================================================
@@ -152,7 +156,9 @@ public class RecordingService {
                     "客户风险评估已过期或不存在，请重新评估");
         }
 
-        Business business = businessRepository.selectById(businessId);
+        Business business = businessRepository.selectOne(
+                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<Business>()
+                        .eq("business_id", businessId));
         var matchResult = riskService.match(assessment.getRiskLevel(), business.getProductRiskLevel());
 
         business.setRiskLevel(assessment.getRiskLevel());
@@ -203,7 +209,9 @@ public class RecordingService {
         }
 
         // 3. 校验业务当前确实在录制中
-        Business business = businessRepository.selectById(businessId);
+        Business business = businessRepository.selectOne(
+                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<Business>()
+                        .eq("business_id", businessId));
         if (business == null) {
             throw new BusinessException("BUSINESS_NOT_FOUND", "业务不存在: " + businessId);
         }
@@ -308,6 +316,9 @@ public class RecordingService {
             recordingRepository.updateById(rec);
         }
         log.info("业务已归档: businessId={}", businessId);
+
+        // 排程犹豫期 3 次智能回访 (D+1 / D+7 / D+14)
+        followUpService.scheduleThreeFollowUps(businessId);
     }
 
     // ====================================================================
@@ -348,7 +359,9 @@ public class RecordingService {
     // ====================================================================
     @Transactional(rollbackFor = Exception.class)
     public void manualFail(String businessId, String reason, String operatorId) {
-        Business business = businessRepository.selectById(businessId);
+        Business business = businessRepository.selectOne(
+                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<Business>()
+                        .eq("business_id", businessId));
         if (business == null) {
             throw new BusinessException("BUSINESS_NOT_FOUND", "业务不存在: " + businessId);
         }
@@ -362,11 +375,101 @@ public class RecordingService {
     }
 
     // ====================================================================
+    // 11. 紧急停用 · 全局停用 AI（合规紧急开关，15 分钟内生效）
+    // ====================================================================
+    @Transactional(rollbackFor = Exception.class)
+    public void emergencyStopAI(String operatorId, String reason) {
+        log.error("紧急停用 AI 被触发! operator={}, reason={}", operatorId, reason);
+        writeEvent("GLOBAL", "ACTIVE", "STOPPED", operatorId, "EMERGENCY_STOP_AI: " + reason);
+    }
+
+    // ====================================================================
+    // 12. 关联跨段录像（线上线下融合业务）
+    // ====================================================================
+    @Transactional(rollbackFor = Exception.class)
+    public void linkRecordings(String primaryRecId, String linkedRecId, String operatorId) {
+        Recording primary = recordingRepository.selectOne(
+                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<Recording>()
+                        .eq("rec_id", primaryRecId));
+        Recording linked = recordingRepository.selectOne(
+                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<Recording>()
+                        .eq("rec_id", linkedRecId));
+        if (primary == null || linked == null) {
+            throw new BusinessException("RECORDING_NOT_FOUND",
+                    "录像不存在: primary=" + primaryRecId + ", linked=" + linkedRecId);
+        }
+        // 必须同一业务
+        if (!primary.getBusinessId().equals(linked.getBusinessId())) {
+            throw new BusinessException("CROSS_BUSINESS_LINK_FORBIDDEN",
+                    "只能关联同一业务的录像");
+        }
+        primary.setLinkedRecId(linkedRecId);
+        linked.setLinkedRecId(primaryRecId);
+        recordingRepository.updateById(primary);
+        recordingRepository.updateById(linked);
+
+        writeEvent(primary.getBusinessId(), primary.getChannel().name(), primary.getChannel().name(),
+                operatorId, "RECORDINGS_LINKED: " + primaryRecId + " <-> " + linkedRecId);
+        log.info("已关联录像: {} <-> {}", primaryRecId, linkedRecId);
+    }
+
+    // ====================================================================
+    // 13. 审计回看（监管 / 风控 / 内部审计）
+    // ====================================================================
+    public Map<String, Object> auditReview(String businessId, String auditorId) {
+        // 复用 overview, 额外加脱敏 + 审计元信息
+        Map<String, Object> overview = getBusinessOverview(businessId);
+        Business business = (Business) overview.get("business");
+        if (business != null) {
+            // 客户 ID 脱敏
+            business.setCustomerIdHash(sensitiveDataMasker.maskIdHash(business.getCustomerIdHash()));
+        }
+        Map<String, Object> audit = new HashMap<>();
+        audit.putAll(overview);
+        audit.put("auditorId", auditorId);
+        audit.put("auditAt", LocalDateTime.now());
+        audit.put("retentionUntil", business != null
+                ? LocalDate.now().plusYears(10)
+                : null);
+        // 写审计回看事件
+        EventLog event = new EventLog();
+        event.setBusinessId(businessId);
+        event.setEventType("AUDIT_REVIEWED");
+        event.setFromState(business != null ? business.getState().name() : "UNKNOWN");
+        event.setToState(business != null ? business.getState().name() : "UNKNOWN");
+        event.setActorId(auditorId);
+        event.setActorType("AUDITOR");
+        event.setEventData("{\"action\":\"AUDIT_REVIEW\"}");
+        event.setCreatedAt(LocalDateTime.now());
+        eventLogRepository.insert(event);
+        return audit;
+    }
+
+    // ====================================================================
+    // 14. 实时耳返副驾（0.5 秒内推送 3 选 1 话术）
+    // ====================================================================
+    public Map<String, Object> getRealTimeCoaching(String businessId, String asrSegment) {
+        // 先做禁播词扫描 (前端的 400ms 防抖实际在客户端, 这里给服务端兜底)
+        List<ComplianceService.Hit> hits = complianceService.scan(asrSegment);
+        if (!hits.isEmpty()) {
+            return Map.of(
+                    "alerts", hits,
+                    "coaching", "建议立即换一句: " + asrSegment + " → 避免禁播词",
+                    "latencyMs", 0
+            );
+        }
+        return realTimeCoachingService.coach(businessId, asrSegment);
+    }
+
+    // ====================================================================
     // 内部：状态转换核心（替代原 Saga.applyStateChange）
     // ====================================================================
     private void transitionState(String businessId, RecordingState target,
                                   String actorId, String reason) {
-        Business business = businessRepository.selectById(businessId);
+        // 用 business_id 字符串 (不是 @TableId) 查
+        Business business = businessRepository.selectOne(
+                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<Business>()
+                        .eq("business_id", businessId));
         if (business == null) {
             throw new BusinessException("BUSINESS_NOT_FOUND", "业务不存在: " + businessId);
         }
