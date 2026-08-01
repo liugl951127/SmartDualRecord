@@ -114,7 +114,7 @@
         </div>
 
         <!-- 预警收件箱 -->
-        <div class="card card-gradient">
+        <div class="card card-warm">
           <div class="card-header">
             <h3 class="card-title">
               🚨 预警收件箱
@@ -134,13 +134,13 @@
                 <div class="alert-title">{{ a.title }}</div>
                 <div class="alert-desc">{{ a.desc }}</div>
                 <div class="alert-meta">
-                  <span class="text-sm text-muted mono">{{ a.bizId }}</span>
-                  <span class="text-sm text-muted">{{ a.time }}</span>
+                  <span class="alert-biz mono">{{ a.bizId }}</span>
+                  <span class="alert-time">{{ a.time }}</span>
                 </div>
               </div>
               <button
                 v-if="!a.handled"
-                class="btn btn-sm btn-text"
+                class="btn btn-sm btn-ghost alert-mark"
                 @click.stop="markHandled(a)"
               >
                 ✓
@@ -148,7 +148,7 @@
             </div>
             <div v-if="!alertList.length" class="empty">
               <div class="empty-icon">✅</div>
-              <p class="empty-text" style="color: rgba(255,255,255,0.7)">全部预警已处理</p>
+              <p class="empty-text">全部预警已处理</p>
             </div>
           </div>
         </div>
@@ -560,7 +560,24 @@ onUnmounted(() => {
   margin-top: 4px;
   flex-wrap: wrap;
 }
-.qi-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.qi-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+  .btn-primary {
+    box-shadow: 0 2px 6px rgba(30, 42, 71, 0.25);
+    font-weight: 600;
+  }
+  .btn-ghost {
+    background: white;
+    border-color: var(--border);
+    &:hover {
+      background: var(--bg-accent);
+      border-color: var(--line-accent);
+      color: var(--accent-2);
+    }
+  }
+}
 
 // ============ 预警收件箱 ============
 .alert-list {
@@ -572,45 +589,86 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
-  background: rgba(255,255,255,0.08);
+  padding: 12px 14px;
+  background: white;
+  border: 1px solid var(--border-light);
   border-radius: var(--radius);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   cursor: pointer;
   position: relative;
-  transition: all 0.15s;
-  &:hover { background: rgba(255,255,255,0.15); }
+  transition: all 0.2s;
+  &:hover {
+    background: var(--bg-accent);
+    border-color: var(--line-accent);
+    transform: translateX(2px);
+    box-shadow: var(--shadow-sm);
+  }
   &.handled { opacity: 0.5; }
 }
 .alert-bar {
-  width: 3px;
-  height: 32px;
+  width: 4px;
+  height: 36px;
   border-radius: 2px;
   background: var(--text-3);
+  flex-shrink: 0;
 }
-.alert-item.severity-critical .alert-bar { background: var(--danger); }
+.alert-item.severity-critical .alert-bar { background: var(--danger); box-shadow: 0 0 8px rgba(239,68,68,0.4); }
 .alert-item.severity-high .alert-bar { background: var(--warning); }
 .alert-item.severity-medium .alert-bar { background: var(--info); }
 .alert-item.severity-low .alert-bar { background: var(--text-3); }
 
-.alert-icon { font-size: 18px; }
+.alert-icon {
+  font-size: 20px;
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  flex-shrink: 0;
+}
+.alert-item.severity-critical .alert-icon { background: var(--danger-light); }
+.alert-item.severity-high .alert-icon { background: var(--warning-light); }
+.alert-item.severity-medium .alert-icon { background: var(--info-light); }
 .alert-body { flex: 1; min-width: 0; }
 .alert-title {
   font-size: 13px;
   font-weight: 600;
-  color: white;
+  color: var(--text-1);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .alert-desc {
-  font-size: 11px;
-  color: rgba(255,255,255,0.7);
+  font-size: 12px;
+  color: var(--text-2);
+  margin-top: 4px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.alert-meta { display: flex; gap: 6px; margin-top: 2px; opacity: 0.6; }
+.alert-meta {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 11px;
+}
+.alert-biz {
+  color: var(--text-3);
+  font-weight: 500;
+  background: var(--bg);
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+.alert-time { color: var(--text-3); }
+.alert-mark {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--success);
+  border-color: var(--success);
+  &:hover {
+    background: var(--success);
+    color: white;
+  }
+}
 
 // ============ 业务分布 ============
 .dist-list { display: flex; flex-direction: column; gap: 14px; }
