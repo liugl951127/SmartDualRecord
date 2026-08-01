@@ -1,5 +1,12 @@
 <template>
   <div class="record-flow">
+    <!-- 权限申请卡 -->
+    <PermissionGate
+      :visible="!permissionGranted"
+      @granted="onPermissionGranted"
+      @skip="onPermissionSkip"
+    />
+
     <div class="record-header">
       <div class="biz-id">{{ businessId }}</div>
       <div class="timer">{{ formattedTime }}</div>
@@ -117,6 +124,7 @@ import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { recordingApi, scriptApi } from '@/api'
+import PermissionGate from '@/components/PermissionGate.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -139,6 +147,7 @@ const nodeStart = ref(Date.now())
 const nodeElapsed = ref(0)
 const state = ref<string>('')
 const script = ref<any>(null)
+const permissionGranted = ref(false)  // 权限已批准
 
 const videoEl = ref<HTMLVideoElement>()
 const canvasEl = ref<HTMLCanvasElement>()
@@ -152,6 +161,20 @@ let watermarkTimer: any = null
 let signContext: CanvasRenderingContext2D | null = null
 let isDrawing = false
 let lastPos = { x: 0, y: 0 }
+
+// ============ 权限处理 ============
+function onPermissionGranted(s: MediaStream) {
+  permissionGranted.value = true
+  stream = s
+  if (videoEl.value) {
+    videoEl.value.srcObject = s
+  }
+  showToast('🎥 摄像头已开启')
+}
+function onPermissionSkip() {
+  permissionGranted.value = true
+  showToast('已跳过, 仅查看模式 (无法录制)')
+}
 
 const formattedTime = computed(() => {
   const total = (Date.now() - nodeStart.value) / 1000
@@ -180,8 +203,15 @@ function stateLabel(s: string) {
 onMounted(async () => {
   await loadOverview()
   await loadScript()
-  await startCamera()
-  nextTick(() => setupWatermark())
+  // 不再自动 startCamera, 改由 PermissionGate 处理
+  // PermissionGate 弹窗, 用户授权后 onPermissionGranted 会接管
+  nextTick(() => {
+    if (videoEl.value) {
+      // 监听 stream 变化, 渲染到 video
+      const observer = new MutationObserver(() => {})
+      observer.disconnect()
+    }
+  })
 })
 
 onUnmounted(() => {

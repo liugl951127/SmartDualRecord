@@ -1,5 +1,11 @@
 <template>
   <div class="bilateral">
+    <PermissionGate
+      :visible="!permissionGranted"
+      @granted="onPermissionGranted"
+      @skip="onPermissionSkip"
+    />
+
     <div class="b-header">
       <div class="b-title">📞 双边录制</div>
       <div :class="['b-status', status.cls]">
@@ -93,6 +99,7 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast, showDialog } from 'vant'
+import PermissionGate from '@/components/PermissionGate.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -105,6 +112,21 @@ const watermarkEl = ref<HTMLCanvasElement>()
 const peerConnected = ref(false)
 const connecting = ref(false)
 const connectionState = ref('disconnected')  // disconnected/connecting/connected
+const permissionGranted = ref(false)
+
+// 权限处理
+function onPermissionGranted(s: MediaStream) {
+  permissionGranted.value = true
+  localStream = s
+  if (localVideo.value) {
+    localVideo.value.srcObject = s
+  }
+  showToast('🎥 摄像头已开启')
+}
+function onPermissionSkip() {
+  permissionGranted.value = true
+  showToast('已跳过, 仅查看模式')
+}
 const recording = ref(false)
 const startTime = ref(0)
 const elapsed = ref(0)
