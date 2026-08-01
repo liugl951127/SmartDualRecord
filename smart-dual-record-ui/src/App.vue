@@ -16,6 +16,7 @@ import RiskAssessmentPanel from '@/components/RiskAssessmentPanel.vue'
 import RecordingCompliancePanel from '@/components/RecordingCompliancePanel.vue'
 import FollowUpPanel from '@/components/FollowUpPanel.vue'
 import EvidencePreservationPanel from '@/components/EvidencePreservationPanel.vue'
+import IntegrityPanel from '@/components/IntegrityPanel.vue'
 
 const activeTab = ref('workbench')
 const backendOnline = ref(false)
@@ -45,6 +46,12 @@ const navGroups = [
       { name: 'config', label: '话术配置', icon: 'Tools' },
       { name: 'filepush', label: '文件推送', icon: 'Share' },
       { name: 'advisor', label: '理财经理', icon: 'Service' }
+    ]
+  },
+  {
+    label: '数据安全',
+    items: [
+      { name: 'integrity', label: '防篡改 + 血缘', icon: 'Lock' }
     ]
   },
   {
@@ -224,6 +231,7 @@ onUnmounted(() => {
           <AgentFilePush v-else-if="activeTab === 'filepush'" />
           <AdvisorPanel v-else-if="activeTab === 'advisor'" />
           <StateMachineViewer v-else-if="activeTab === 'state'" :transitions="transitions" />
+          <IntegrityPanel v-else-if="activeTab === 'integrity'" />
         </div>
       </main>
 

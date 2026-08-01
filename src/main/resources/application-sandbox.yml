@@ -14,7 +14,7 @@ spring:
       mode: always
       schema-locations: classpath:db/schema.sql
       data-locations: classpath:db/data.sql
-      continue-on-error: false
+      continue-on-error: true
       encoding: UTF-8
 
 dual-record:

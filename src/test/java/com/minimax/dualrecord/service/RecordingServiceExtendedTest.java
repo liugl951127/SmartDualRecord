@@ -36,6 +36,8 @@ class RecordingServiceExtendedTest {
         ComplianceService compSvc = mock(ComplianceService.class);
         QaService qaSvc = mock(QaService.class);
         FollowUpService followUpSvc = mock(FollowUpService.class);
+        AuditChainService auditChainSvc = mock(AuditChainService.class);
+        DataLineageService lineageSvc = mock(DataLineageService.class);
         SensitiveDataMasker masker = mock(SensitiveDataMasker.class);
         RealTimeCoachingService coachSvc = mock(RealTimeCoachingService.class);
         com.minimax.dualrecord.ai.LlmGateway llm = mock(com.minimax.dualrecord.ai.LlmGateway.class);
@@ -44,7 +46,7 @@ class RecordingServiceExtendedTest {
         com.minimax.dualrecord.util.BusinessIdGenerator idGen = mock(com.minimax.dualrecord.util.BusinessIdGenerator.class);
 
         RecordingService svc = new RecordingService(bizRepo, recRepo, nodeRepo, evtRepo,
-                scriptSvc, riskSvc, compSvc, qaSvc, followUpSvc, llm, asr, df, masker, coachSvc, idGen);
+                scriptSvc, riskSvc, compSvc, qaSvc, auditChainSvc, lineageSvc, followUpSvc, llm, asr, df, masker, coachSvc, idGen);
 
         svc.emergencyStopAI("admin01", "监管要求");
 
@@ -61,6 +63,8 @@ class RecordingServiceExtendedTest {
         ComplianceService compSvc = mock(ComplianceService.class);
         QaService qaSvc = mock(QaService.class);
         FollowUpService followUpSvc = mock(FollowUpService.class);
+        AuditChainService auditChainSvc = mock(AuditChainService.class);
+        DataLineageService lineageSvc = mock(DataLineageService.class);
         SensitiveDataMasker masker = mock(SensitiveDataMasker.class);
         RealTimeCoachingService coachSvc = mock(RealTimeCoachingService.class);
         com.minimax.dualrecord.ai.LlmGateway llm = mock(com.minimax.dualrecord.ai.LlmGateway.class);
@@ -82,7 +86,7 @@ class RecordingServiceExtendedTest {
                 .thenReturn(linked);
 
         RecordingService svc = new RecordingService(bizRepo, recRepo, mock(RecordingNodeRepository.class), evtRepo,
-                scriptSvc, riskSvc, compSvc, qaSvc, followUpSvc, llm, asr, df, masker, coachSvc, idGen);
+                scriptSvc, riskSvc, compSvc, qaSvc, auditChainSvc, lineageSvc, followUpSvc, llm, asr, df, masker, coachSvc, idGen);
 
         // 不应抛异常
         assertDoesNotThrow(() -> svc.linkRecordings("REC-PRIMARY", "REC-LINKED", "admin01"));
@@ -99,6 +103,8 @@ class RecordingServiceExtendedTest {
         ComplianceService compSvc = mock(ComplianceService.class);
         QaService qaSvc = mock(QaService.class);
         FollowUpService followUpSvc = mock(FollowUpService.class);
+        AuditChainService auditChainSvc = mock(AuditChainService.class);
+        DataLineageService lineageSvc = mock(DataLineageService.class);
         SensitiveDataMasker masker = mock(SensitiveDataMasker.class);
         RealTimeCoachingService coachSvc = mock(RealTimeCoachingService.class);
         com.minimax.dualrecord.ai.LlmGateway llm = mock(com.minimax.dualrecord.ai.LlmGateway.class);
@@ -120,7 +126,7 @@ class RecordingServiceExtendedTest {
                 .thenReturn(linked);
 
         RecordingService svc = new RecordingService(bizRepo, recRepo, mock(RecordingNodeRepository.class), evtRepo,
-                scriptSvc, riskSvc, compSvc, qaSvc, followUpSvc, llm, asr, df, masker, coachSvc, idGen);
+                scriptSvc, riskSvc, compSvc, qaSvc, auditChainSvc, lineageSvc, followUpSvc, llm, asr, df, masker, coachSvc, idGen);
 
         assertThrows(com.minimax.dualrecord.exception.BusinessException.class,
                 () -> svc.linkRecordings("REC-A", "REC-B", "admin01"));
@@ -137,6 +143,8 @@ class RecordingServiceExtendedTest {
         ComplianceService compSvc = mock(ComplianceService.class);
         QaService qaSvc = mock(QaService.class);
         FollowUpService followUpSvc = mock(FollowUpService.class);
+        AuditChainService auditChainSvc = mock(AuditChainService.class);
+        DataLineageService lineageSvc = mock(DataLineageService.class);
         SensitiveDataMasker masker = mock(SensitiveDataMasker.class);
         RealTimeCoachingService coachSvc = mock(RealTimeCoachingService.class);
         com.minimax.dualrecord.ai.LlmGateway llm = mock(com.minimax.dualrecord.ai.LlmGateway.class);
@@ -153,7 +161,7 @@ class RecordingServiceExtendedTest {
                 .thenReturn(new Recording());
 
         RecordingService svc = new RecordingService(bizRepo, recRepo, nodeRepo, evtRepo,
-                scriptSvc, riskSvc, compSvc, qaSvc, followUpSvc, llm, asr, df, masker, coachSvc, idGen);
+                scriptSvc, riskSvc, compSvc, qaSvc, auditChainSvc, lineageSvc, followUpSvc, llm, asr, df, masker, coachSvc, idGen);
 
         svc.signAndArchive("BNK-001");
 

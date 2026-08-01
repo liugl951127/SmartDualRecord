@@ -325,3 +325,106 @@ CREATE TABLE tb_advisor_session (
     INDEX idx_adv_advisor (advisor_id),
     INDEX idx_adv_status (`status`)
 );
+
+-- ===========================================================
+-- 数据防篡改 & 关联追溯 (v1.6.0)
+-- ===========================================================
+
+-- 1. 审计链 - append-only 哈希链
+CREATE TABLE tb_audit_chain (
+    id              VARCHAR(32) PRIMARY KEY,
+    chain_id        VARCHAR(64) NOT NULL,            -- 链 ID (按业务/天)
+    sequence_no     BIGINT NOT NULL,                 -- 链内序号
+    operation_type  VARCHAR(32) NOT NULL,            -- CREATE/UPDATE/DELETE/STATE_TRANSITION/SIGN/PRESERVE
+    entity_type     VARCHAR(32) NOT NULL,            -- 实体类型 (business/recording/risk/script/event)
+    entity_id       VARCHAR(64) NOT NULL,            -- 实体 ID
+    business_id     VARCHAR(64),                     -- 业务 ID (可空, 非业务操作)
+    actor_id        VARCHAR(64),
+    actor_role      VARCHAR(16),
+    payload_hash    VARCHAR(64) NOT NULL,            -- payload 的 SHA-256
+    payload_json    TEXT,                            -- 完整 payload JSON
+    prev_hash       VARCHAR(64) NOT NULL,            -- 前一节点的 SHA-256
+    chain_hash      VARCHAR(64) NOT NULL,            -- 本节点 SHA-256 (含 prev_hash + payload_hash)
+    hmac_signature  VARCHAR(128) NOT NULL,           -- HMAC-SHA256 签名 (用 server key)
+    merkle_root     VARCHAR(64),                     -- Merkle 根 (每 N 节点聚合一次, 默认 N=100)
+    server_node     VARCHAR(32) NOT NULL,            -- 服务节点 (防单点伪造)
+    signed_at       TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    INDEX idx_audit_chain (chain_id, sequence_no),
+    INDEX idx_audit_entity (entity_type, entity_id),
+    INDEX idx_audit_biz (business_id),
+    INDEX idx_audit_time (signed_at)
+);
+
+-- 2. 业务全链路血缘 (DAG 关系图)
+CREATE TABLE tb_data_lineage (
+    id              VARCHAR(32) PRIMARY KEY,
+    business_id     VARCHAR(64) NOT NULL,
+    parent_type     VARCHAR(32) NOT NULL,            -- business / recording / rec_node / risk_assessment
+    parent_id       VARCHAR(64) NOT NULL,
+    child_type      VARCHAR(32) NOT NULL,
+    child_id        VARCHAR(64) NOT NULL,
+    relation_type   VARCHAR(32) NOT NULL,            -- CREATES / USES / REFERENCES / DERIVES_FROM / TRIGGERS
+    relation_meta   VARCHAR(512),
+    created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_lin_biz (business_id),
+    INDEX idx_lin_parent (parent_type, parent_id),
+    INDEX idx_lin_child (child_type, child_id)
+);
+
+-- 3. 签名注册表 - 记录每个 entity 的最新签名
+CREATE TABLE tb_signature (
+    id              VARCHAR(32) PRIMARY KEY,
+    entity_type     VARCHAR(32) NOT NULL,
+    entity_id       VARCHAR(64) NOT NULL,
+    business_id     VARCHAR(64),
+    signer_id       VARCHAR(64),                     -- 签名者 (system / regulator)
+    algorithm       VARCHAR(16) NOT NULL DEFAULT 'HMAC-SHA256',
+    public_key_id   VARCHAR(64),                     -- 未来支持 RSA
+    signature       VARCHAR(256) NOT NULL,
+    content_hash    VARCHAR(64) NOT NULL,            -- 签名内容的 SHA-256
+    signed_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    valid_until     TIMESTAMP,                       -- 失效时间 (如有时效)
+    revoked         TINYINT NOT NULL DEFAULT 0,
+    revoke_reason   VARCHAR(256),
+    UNIQUE KEY uk_sig_entity (entity_type, entity_id, signer_id),
+    INDEX idx_sig_biz (business_id)
+);
+
+-- 4. 完整性校验日志
+CREATE TABLE tb_integrity_check (
+    id              VARCHAR(32) PRIMARY KEY,
+    check_type      VARCHAR(32) NOT NULL,            -- CHAIN_VERIFY / SIGNATURE_VERIFY / FULL_AUDIT
+    check_target    VARCHAR(64),                     -- 检查范围 (chain_id 或 business_id)
+    started_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    finished_at     TIMESTAMP,
+    total_checked   INT,
+    passed          INT,
+    failed          INT,
+    broken_links    TEXT,                            -- JSON: [{seq, expected, actual}]
+    status          VARCHAR(16) NOT NULL,            -- RUNNING / PASSED / FAILED / PARTIAL
+    checker_id      VARCHAR(64),
+    result_summary  VARCHAR(1024)
+);
+
+-- 5. 防篡改告警
+CREATE TABLE tb_tamper_alert (
+    id              VARCHAR(32) PRIMARY KEY,
+    alert_type      VARCHAR(32) NOT NULL,            -- BROKEN_CHAIN / INVALID_SIGNATURE / MERKLE_MISMATCH / MISSING_ENTRY
+    severity        VARCHAR(16) NOT NULL,            -- CRITICAL / HIGH / MEDIUM
+    chain_id        VARCHAR(64),
+    entity_type     VARCHAR(32),
+    entity_id       VARCHAR(64),
+    business_id     VARCHAR(64),
+    sequence_no     BIGINT,
+    detected_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expected_hash   VARCHAR(64),
+    actual_hash     VARCHAR(64),
+    description     VARCHAR(1024),
+    `status`          VARCHAR(16) NOT NULL DEFAULT 'OPEN',  -- OPEN / INVESTIGATING / RESOLVED / FALSE_POSITIVE
+    resolved_at     TIMESTAMP,
+    resolved_by     VARCHAR(64),
+    resolution_note VARCHAR(1024),
+    INDEX idx_alert_status (`status`),
+    INDEX idx_alert_severity (severity),
+    INDEX idx_alert_time (detected_at)
+);

@@ -75,6 +75,8 @@ public class RecordingService {
     private final RiskAssessmentService riskService;
     private final ComplianceService complianceService;
     private final QaService qaService;
+    private final AuditChainService auditChainService;
+    private final DataLineageService dataLineageService;
     private final FollowUpService followUpService;
     private final LlmGateway llmGateway;
     private final AsrService asrService;
@@ -130,6 +132,33 @@ public class RecordingService {
         // 3. 初始事件日志
         writeEvent(businessId, null, RecordingState.INIT.name(),
                 "SYSTEM", "BUSINESS_CREATED");
+
+        // 4. 审计链 - 业务创建
+        try {
+            auditChainService.appendForBusiness(
+                businessId, "CREATE", "business", business.getId(),
+                java.util.Map.of(
+                    "businessId", businessId,
+                    "type", type.name(),
+                    "productId", productId,
+                    "channel", channel.name(),
+                    "amount", amount
+                ),
+                sellerIdHash, "SELLER"
+            );
+            // 血缘: business -> recording
+            dataLineageService.link(businessId, "business", business.getId(),
+                "recording", rec.getId(), "HAS_RECORDING",
+                String.format("{\"channel\":\"%s\",\"recId\":\"%s\"}", channel, rec.getRecId()));
+            // 血缘: business -> script
+            if (productId != null) {
+                dataLineageService.link(businessId, "business", business.getId(),
+                    "script", productId, "USES_SCRIPT",
+                    String.format("{\"productId\":\"%s\"}", productId));
+            }
+        } catch (Exception e) {
+            log.warn("审计/血缘 记录失败 (不影响业务): {}", e.getMessage());
+        }
 
         log.info("业务已创建: businessId={}, recId={}", businessId, rec.getRecId());
         return business;
@@ -238,6 +267,26 @@ public class RecordingService {
         writeEvent(businessId, business.getState().name(), business.getState().name(),
                 "SYSTEM", "NODE_COMPLETED: " + node.getCode() + " (hits=" + hits.size() + ")");
 
+        // 审计链 - 节点完成
+        try {
+            auditChainService.appendForBusiness(
+                businessId, "UPDATE", "node", detail.getId(),
+                java.util.Map.of(
+                    "recId", recId,
+                    "node", node.getCode(),
+                    "durationMs", 60_000L,
+                    "hits", hits.size()
+                ),
+                "system", "SYSTEM"
+            );
+            // 血缘: recording -> node
+            dataLineageService.link(businessId, "recording", recId,
+                "node", detail.getId(), "CONTAINS_NODE",
+                String.format("{\"nodeId\":\"%s\",\"code\":\"%s\"}", detail.getNodeId(), node.getCode()));
+        } catch (Exception e) {
+            log.warn("审计/血缘 节点记录失败: {}", e.getMessage());
+        }
+
         return new NodeResult(node.getCode(), true, hits, null);
     }
 
@@ -316,6 +365,28 @@ public class RecordingService {
             recordingRepository.updateById(rec);
         }
         log.info("业务已归档: businessId={}", businessId);
+
+        // 审计链 - 签字 + 归档
+        try {
+            auditChainService.appendForBusiness(
+                businessId, "SIGN", "business", businessId,
+                java.util.Map.of(
+                    "action", "CUSTOMER_SIGNED",
+                    "archivedAt", java.time.LocalDateTime.now().toString()
+                ),
+                "customer", "CUSTOMER"
+            );
+            auditChainService.appendForBusiness(
+                businessId, "UPDATE", "business", businessId,
+                java.util.Map.of(
+                    "action", "ARCHIVED",
+                    "state", "ARCHIVED"
+                ),
+                "system", "SYSTEM"
+            );
+        } catch (Exception e) {
+            log.warn("审计签字/归档失败: {}", e.getMessage());
+        }
 
         // 排程犹豫期 3 次智能回访 (D+1 / D+7 / D+14)
         followUpService.scheduleThreeFollowUps(businessId);

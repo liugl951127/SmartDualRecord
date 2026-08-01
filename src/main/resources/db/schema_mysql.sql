@@ -324,3 +324,101 @@ CREATE TABLE tb_advisor_session (
     INDEX idx_adv_advisor (advisor_id),
     INDEX idx_adv_status (`status`)
 );
+
+-- ===========================================================
+-- 数据防篡改 & 关联追溯 (v1.6.0)
+-- ===========================================================
+
+CREATE TABLE tb_audit_chain (
+    id              VARCHAR(32) PRIMARY KEY,
+    chain_id        VARCHAR(64) NOT NULL,
+    sequence_no     BIGINT NOT NULL,
+    operation_type  VARCHAR(32) NOT NULL,
+    entity_type     VARCHAR(32) NOT NULL,
+    entity_id       VARCHAR(64) NOT NULL,
+    business_id     VARCHAR(64),
+    actor_id        VARCHAR(64),
+    actor_role      VARCHAR(16),
+    payload_hash    VARCHAR(64) NOT NULL,
+    payload_json    TEXT,
+    prev_hash       VARCHAR(64) NOT NULL,
+    chain_hash      VARCHAR(64) NOT NULL,
+    hmac_signature  VARCHAR(128) NOT NULL,
+    merkle_root     VARCHAR(64),
+    server_node     VARCHAR(32) NOT NULL,
+    signed_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_audit_chain (chain_id, sequence_no),
+    INDEX idx_audit_entity (entity_type, entity_id),
+    INDEX idx_audit_biz (business_id),
+    INDEX idx_audit_time (signed_at)
+);
+
+CREATE TABLE tb_data_lineage (
+    id              VARCHAR(32) PRIMARY KEY,
+    business_id     VARCHAR(64) NOT NULL,
+    parent_type     VARCHAR(32) NOT NULL,
+    parent_id       VARCHAR(64) NOT NULL,
+    child_type      VARCHAR(32) NOT NULL,
+    child_id        VARCHAR(64) NOT NULL,
+    relation_type   VARCHAR(32) NOT NULL,
+    relation_meta   VARCHAR(512),
+    created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_lin_biz (business_id),
+    INDEX idx_lin_parent (parent_type, parent_id),
+    INDEX idx_lin_child (child_type, child_id)
+);
+
+CREATE TABLE tb_signature (
+    id              VARCHAR(32) PRIMARY KEY,
+    entity_type     VARCHAR(32) NOT NULL,
+    entity_id       VARCHAR(64) NOT NULL,
+    business_id     VARCHAR(64),
+    signer_id       VARCHAR(64),
+    algorithm       VARCHAR(16) NOT NULL DEFAULT 'HMAC-SHA256',
+    public_key_id   VARCHAR(64),
+    signature       VARCHAR(256) NOT NULL,
+    content_hash    VARCHAR(64) NOT NULL,
+    signed_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    valid_until     TIMESTAMP,
+    revoked         TINYINT NOT NULL DEFAULT 0,
+    revoke_reason   VARCHAR(256),
+    UNIQUE KEY uk_sig_entity (entity_type, entity_id, signer_id),
+    INDEX idx_sig_biz (business_id)
+);
+
+CREATE TABLE tb_integrity_check (
+    id              VARCHAR(32) PRIMARY KEY,
+    check_type      VARCHAR(32) NOT NULL,
+    check_target    VARCHAR(64),
+    started_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    finished_at     TIMESTAMP,
+    total_checked   INT,
+    passed          INT,
+    failed          INT,
+    broken_links    TEXT,
+    status          VARCHAR(16) NOT NULL,
+    checker_id      VARCHAR(64),
+    result_summary  VARCHAR(1024)
+);
+
+CREATE TABLE tb_tamper_alert (
+    id              VARCHAR(32) PRIMARY KEY,
+    alert_type      VARCHAR(32) NOT NULL,
+    severity        VARCHAR(16) NOT NULL,
+    chain_id        VARCHAR(64),
+    entity_type     VARCHAR(32),
+    entity_id       VARCHAR(64),
+    business_id     VARCHAR(64),
+    sequence_no     BIGINT,
+    detected_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expected_hash   VARCHAR(64),
+    actual_hash     VARCHAR(64),
+    description     VARCHAR(1024),
+    `status`        VARCHAR(16) NOT NULL DEFAULT 'OPEN',
+    resolved_at     TIMESTAMP,
+    resolved_by     VARCHAR(64),
+    resolution_note VARCHAR(1024),
+    INDEX idx_alert_status (`status`),
+    INDEX idx_alert_severity (severity),
+    INDEX idx_alert_time (detected_at)
+);
