@@ -51,10 +51,109 @@ CREATE TABLE tb_recording (
     linked_rec_id   VARCHAR(64),                    -- 跨段关联
     location_branch VARCHAR(64),
     retention_until DATE,
+    -- v1.2 录像合规增强字段
+    quality_score       INT,                          -- 质量总分 0-100
+    quality_status      VARCHAR(16),                  -- PASS / PASS_WITH_FINDINGS / FAIL
+    resolution          VARCHAR(16),                  -- 1920x1080 / 1280x720
+    fps                 INT,                          -- 帧率
+    audio_bitrate       INT,                          -- 比特率 bps
+    black_frame_ratio   DECIMAL(5,2),                 -- 黑屏帧占比 %
+    customer_face_ratio DECIMAL(5,2),                 -- 客户人脸在场率 %
+    third_party_count   INT DEFAULT 0,                -- 第三方人脸出现次数
+    location_lat        DECIMAL(10,6),                -- GPS 纬度
+    location_lng        DECIMAL(10,6),                -- GPS 经度
+    ip_address          VARCHAR(45),                  -- IPv4/IPv6
+    device_fingerprint  VARCHAR(64),                  -- 设备指纹
+    encryption_iv       VARCHAR(32),                  -- SM4 IV
+    signed_hash         VARCHAR(128),                 -- 业务方签名
+    preservation_id     VARCHAR(64),                  -- 证据保全 ID
+    retention_notified_at TIMESTAMP,                  -- 到期通知时间
     created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted         TINYINT NOT NULL DEFAULT 0,
     INDEX idx_rec_business (business_id),
-    INDEX idx_rec_rec (rec_id)
+    INDEX idx_rec_rec (rec_id),
+    INDEX idx_rec_quality (quality_status),
+    INDEX idx_rec_retention (retention_until)
+);
+
+-- ---------- 2.1 录像事件标注表 (8 节点进度 + 关键事件) ----------
+DROP TABLE IF EXISTS tb_recording_annotation;
+CREATE TABLE tb_recording_annotation (
+    id              VARCHAR(32) PRIMARY KEY,
+    rec_id          VARCHAR(64) NOT NULL,
+    business_id     VARCHAR(64) NOT NULL,
+    annotation_type VARCHAR(32) NOT NULL,            -- NODE_START / NODE_END / RISK_DISCLOSED / CUSTOMER_AFFIRMATIVE / SIGNED / MANUAL_FLAG
+    node_id         VARCHAR(32),                     -- 关联 8 节点 ID
+    timestamp_ms    BIGINT NOT NULL,                 -- 录像内时间偏移 (ms)
+    note            VARCHAR(512),
+    operator_id     VARCHAR(64),
+    created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_ann_rec (rec_id),
+    INDEX idx_ann_biz (business_id),
+    INDEX idx_ann_type (annotation_type)
+);
+
+-- ---------- 2.2 录像访问审计日志 (谁看了 + 多久 + 操作) ----------
+DROP TABLE IF EXISTS tb_recording_access_log;
+CREATE TABLE tb_recording_access_log (
+    id              VARCHAR(32) PRIMARY KEY,
+    rec_id          VARCHAR(64) NOT NULL,
+    business_id     VARCHAR(64) NOT NULL,
+    user_id         VARCHAR(64) NOT NULL,
+    user_role       VARCHAR(16) NOT NULL,            -- CUSTOMER / SELLER / AUDITOR / REGULATOR / ADMIN
+    access_type     VARCHAR(16) NOT NULL,            -- PLAYBACK / DOWNLOAD / SCREENSHOT / EXPORT / PRESERVE
+    duration_sec    INT,                             -- 看了多久
+    ip_address      VARCHAR(45),
+    access_token    VARCHAR(128),                    -- DRM token
+    accessed_at     TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_audit_rec (rec_id),
+    INDEX idx_audit_user (user_id),
+    INDEX idx_audit_time (accessed_at)
+);
+
+-- ---------- 2.3 断点续传 Session ----------
+DROP TABLE IF EXISTS tb_upload_session;
+CREATE TABLE tb_upload_session (
+    id              VARCHAR(32) PRIMARY KEY,
+    session_id      VARCHAR(64) NOT NULL UNIQUE,
+    business_id     VARCHAR(64) NOT NULL,
+    rec_id          VARCHAR(64),
+    channel         VARCHAR(32) NOT NULL,
+    total_chunks    INT NOT NULL,
+    uploaded_chunks INT NOT NULL DEFAULT 0,
+    chunk_size      INT NOT NULL DEFAULT 5242880,    -- 5MB
+    total_size_bytes BIGINT,
+    status          VARCHAR(16) NOT NULL DEFAULT 'IN_PROGRESS',  -- IN_PROGRESS / COMPLETED / EXPIRED / FAILED
+    started_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_chunk_at   TIMESTAMP,
+    completed_at    TIMESTAMP,
+    expires_at      TIMESTAMP NOT NULL,
+    INDEX idx_us_sess (session_id),
+    INDEX idx_us_biz (business_id),
+    INDEX idx_us_status (status)
+);
+
+-- ---------- 2.4 证据保全记录 (司法/公证) ----------
+DROP TABLE IF EXISTS tb_preservation_record;
+CREATE TABLE tb_preservation_record (
+    id                  VARCHAR(32) PRIMARY KEY,
+    preservation_id     VARCHAR(64) NOT NULL UNIQUE,
+    rec_id              VARCHAR(64) NOT NULL,
+    business_id         VARCHAR(64) NOT NULL,
+    requester_id        VARCHAR(64) NOT NULL,
+    requester_role      VARCHAR(16) NOT NULL,        -- AUDITOR / REGULATOR / COURT / CUSTOMER
+    reason              VARCHAR(512) NOT NULL,
+    notary_org          VARCHAR(64),                  -- 公证机构 (北京公证处 / 司法鉴定中心)
+    notary_cert_no      VARCHAR(64),                  -- 公证书编号
+    preserved_at        TIMESTAMP NOT NULL,
+    preservation_hash   VARCHAR(128) NOT NULL,        -- 保全 hash
+    file_sha256         VARCHAR(128),
+    expires_at          TIMESTAMP,                    -- 保全有效期
+    status              VARCHAR(16) NOT NULL,        -- SUBMITTED / NOTARIZED / REJECTED / EXPIRED
+    created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_pr_rec (rec_id),
+    INDEX idx_pr_biz (business_id),
+    INDEX idx_pr_status (status)
 );
 
 -- ---------- 3. 录像节点明细（8 节点各 1 条）----------
