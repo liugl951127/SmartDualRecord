@@ -19,7 +19,7 @@
  */
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { recordingApi, fileApi } from '@/api'
+import { recordingApi, fileApi, advisorApi } from '@/api'
 
 // ============================================================================
 // 1. 状态
@@ -166,6 +166,22 @@ const isFileSignDrawing = ref(false)
 const hasSign = ref(false)
 let clientWs: WebSocket | null = null
 const clientWsConnected = ref(false)
+
+// v1.5 H5 → PC 理财经理转接
+const showTransferDialog = ref(false)
+const transferReason = ref('PRODUCT_QUESTION')
+const transferDesc = ref('')
+const availableAdvisors = ref<any[]>([])
+const selectedAdvisor = ref<any>(null)
+const activeAdvisorSession = ref<any>(null)
+const transferLoading = ref(false)
+
+const TRANSFER_REASONS = [
+  { value: 'TECH_ISSUE', label: '技术问题', icon: '🔧', desc: '页面卡顿/设备问题' },
+  { value: 'PRODUCT_QUESTION', label: '产品咨询', icon: '📦', desc: '对产品条款有疑问' },
+  { value: 'COMPLIANCE_QUERY', label: '合规咨询', icon: '⚖️', desc: '风险/合规相关问题' },
+  { value: 'OTHER', label: '其他', icon: '💬', desc: '其他需要协助的情况' }
+]
 
 // 8 节点
 const CLIENT_NODES = [
@@ -648,6 +664,75 @@ async function rejectFile() {
     ElMessage.error('拒签失败: ' + e.message)
   }
 }
+
+// ============================================================================
+// v1.5 H5 → PC 理财经理转接
+// ============================================================================
+async function openTransferDialog() {
+  showTransferDialog.value = true
+  if (availableAdvisors.value.length === 0) {
+    try {
+      availableAdvisors.value = await advisorApi.listAdvisors()
+      selectedAdvisor.value = availableAdvisors.value.find(a => a.online) || availableAdvisors.value[0]
+    } catch (e) { /* 兜底 */ }
+  }
+  // 查活跃会话
+  try {
+    activeAdvisorSession.value = await advisorApi.getActive(businessId.value).catch(() => null)
+  } catch (e) { activeAdvisorSession.value = null }
+}
+
+async function requestTransfer() {
+  if (!transferReason.value) {
+    ElMessage.warning('请选择转接原因')
+    return
+  }
+  transferLoading.value = true
+  try {
+    const result = await advisorApi.requestTransfer({
+      businessId: businessId.value,
+      customerName: '客户' + (businessId.value?.slice(-4) || ''),
+      customerMobile: '138****8000',
+      reason: transferReason.value,
+      description: transferDesc.value,
+      preferredAdvisorId: selectedAdvisor.value?.advisorId
+    })
+    activeAdvisorSession.value = result
+    ElMessage.success('✓ 转接请求已发送, 等待理财经理接单')
+    showTransferDialog.value = false
+    transferDesc.value = ''
+  } catch (e: any) {
+    ElMessage.error('请求失败: ' + e.message)
+  } finally {
+    transferLoading.value = false
+  }
+}
+
+async function endAdvisorSession() {
+  if (!activeAdvisorSession.value) return
+  try {
+    await advisorApi.end(activeAdvisorSession.value.sessionId, 'CUSTOMER_LEFT')
+    ElMessage.info('已结束转接')
+    activeAdvisorSession.value = null
+  } catch (e: any) {
+    ElMessage.error('结束失败: ' + e.message)
+  }
+}
+
+// 监听 transfer 状态
+watch(activeAdvisorSession, (s) => {
+  if (s) {
+    if (s.status === 'ACTIVE') {
+      ElMessage.success(`✅ ${s.advisorName} 已接单, 正在为您服务`)
+    } else if (s.status === 'DECLINED') {
+      ElMessage.warning('理财经理忙, 请稍后再试')
+      activeAdvisorSession.value = null
+    } else if (s.status === 'ENDED') {
+      ElMessage.info('会话已结束')
+      activeAdvisorSession.value = null
+    }
+  }
+})
 
 // 风险等级变化时提示
 watch(riskLevel, (v) => {
@@ -1276,6 +1361,91 @@ watch(resumeFromOrder, (o) => {
       </section>
     </main>
 
+    <!-- v1.5 H5 → PC 转接浮动按钮 (始终可见) -->
+    <el-affix position="bottom" :offset="80" style="position: fixed; right: 16px; z-index: 999;">
+      <el-badge v-if="activeAdvisorSession && activeAdvisorSession.status === 'ACTIVE'" :value="1" type="success">
+        <el-button
+          type="success"
+          size="large"
+          @click="endAdvisorSession"
+          style="border-radius: 24px; padding: 8px 16px;"
+        >
+          <el-icon><Phone /></el-icon>
+          {{ activeAdvisorSession.advisorName }} 服务中
+        </el-button>
+      </el-badge>
+      <el-button
+        v-else
+        type="warning"
+        size="large"
+        @click="openTransferDialog"
+        style="border-radius: 24px; padding: 8px 16px; box-shadow: 0 4px 16px rgba(184, 134, 11, 0.3);"
+      >
+        <el-icon><Service /></el-icon>
+        转接理财经理
+      </el-button>
+    </el-affix>
+
+    <!-- v1.5 H5 → PC 转接对话框 -->
+    <el-dialog v-model="showTransferDialog" title="📞 转接理财经理" width="500px">
+      <div v-if="activeAdvisorSession && activeAdvisorSession.status === 'PENDING'">
+        <el-alert type="info" :closable="false" show-icon
+          title="正在等待理财经理接单"
+          :description="`已发送转接请求, ${selectedAdvisor?.name || '理财经理'} 会在 30 秒内响应`"
+        />
+      </div>
+      <div v-else>
+        <h4 style="margin: 0 0 8px;">请选择原因</h4>
+        <el-radio-group v-model="transferReason" style="display: flex; flex-direction: column; gap: 8px;">
+          <el-radio-button
+            v-for="r in TRANSFER_REASONS"
+            :key="r.value"
+            :value="r.value"
+            style="margin: 0; justify-content: flex-start;"
+          >
+            <div style="text-align: left; padding: 4px 0;">
+              <div style="font-size: 13px; font-weight: 600;">{{ r.icon }} {{ r.label }}</div>
+              <div style="font-size: 11px; opacity: 0.7;">{{ r.desc }}</div>
+            </div>
+          </el-radio-button>
+        </el-radio-group>
+        <h4 style="margin: 16px 0 8px;">详细描述 (可选)</h4>
+        <el-input v-model="transferDesc" type="textarea" :rows="3" placeholder="请简单描述您的问题" />
+        <h4 style="margin: 16px 0 8px;">选择理财经理</h4>
+        <div class="advisor-list">
+          <div
+            v-for="a in availableAdvisors"
+            :key="a.advisorId"
+            class="advisor-item"
+            :class="{ selected: selectedAdvisor?.advisorId === a.advisorId, offline: !a.online }"
+            @click="a.online && (selectedAdvisor = a)"
+          >
+            <div class="ai-avatar">{{ a.avatar }}</div>
+            <div class="ai-info">
+              <div class="ai-name">
+                {{ a.name }}
+                <el-tag v-if="a.online" size="small" type="success" effect="plain">在线</el-tag>
+                <el-tag v-else size="small" type="info" effect="plain">离线</el-tag>
+              </div>
+              <div class="ai-meta">{{ a.branch }} · {{ a.yearsOfExp }}年经验 · ⭐ {{ a.rating }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="showTransferDialog = false">取消</el-button>
+        <el-button
+          v-if="!activeAdvisorSession || activeAdvisorSession.status !== 'PENDING'"
+          type="primary"
+          :loading="transferLoading"
+          :disabled="!selectedAdvisor?.online"
+          @click="requestTransfer"
+        >
+          <el-icon><Phone /></el-icon>呼叫 {{ selectedAdvisor?.name || '理财经理' }}
+        </el-button>
+      </template>
+    </el-dialog>
+
     <!-- v1.5 文件查看器 -->
     <el-dialog v-model="showFileViewer" :title="viewingFile?.fileName || '文件查看'" width="700px">
       <div v-if="viewingFile" class="file-viewer">
@@ -1528,6 +1698,16 @@ watch(resumeFromOrder, (o) => {
 .sign-frame { position: relative; width: 100%; background: #fff; border: 2px dashed var(--ink-3); border-radius: 8px; margin: 8px 0; }
 .sign-canvas { display: block; width: 100%; height: 160px; cursor: crosshair; touch-action: none; }
 .sign-placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--ink-3); pointer-events: none; font-style: italic; }
+
+.advisor-list { display: flex; flex-direction: column; gap: 8px; }
+.advisor-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg-2); border: 2px solid transparent; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+.advisor-item:hover { background: var(--bg-3); }
+.advisor-item.selected { border-color: var(--accent); background: rgba(184, 134, 11, 0.05); }
+.advisor-item.offline { opacity: 0.5; cursor: not-allowed; }
+.ai-avatar { font-size: 36px; }
+.ai-info { flex: 1; }
+.ai-name { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.ai-meta { font-size: 11px; color: var(--ink-3); margin-top: 2px; }
 
 /* Footer */
 .cp-footer { background: var(--primary); color: #fff; padding: 12px 24px; }

@@ -292,3 +292,28 @@ CREATE TABLE tb_pushed_file (
     INDEX idx_pf_business (business_id),
     INDEX idx_pf_status (status)
 );
+
+-- ---------- 10. 客户-理财经理会话表 (v1.5 H5 → PC 转接) ----------
+DROP TABLE IF EXISTS tb_advisor_session;
+CREATE TABLE tb_advisor_session (
+    id              VARCHAR(32) PRIMARY KEY,
+    session_id      VARCHAR(64) NOT NULL UNIQUE,
+    business_id     VARCHAR(64) NOT NULL,
+    customer_id_hash VARCHAR(64),
+    customer_name   VARCHAR(64),
+    customer_mobile VARCHAR(32),
+    advisor_id      VARCHAR(64),
+    advisor_name    VARCHAR(64),
+    advisor_branch  VARCHAR(128),
+    reason          VARCHAR(32),                -- TECH_ISSUE / PRODUCT_QUESTION / COMPLIANCE_QUERY / OTHER
+    description     VARCHAR(512),
+    status          VARCHAR(16) NOT NULL DEFAULT 'PENDING',  -- PENDING / ACCEPTED / DECLINED / ACTIVE / ENDED / TIMEOUT
+    created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    accepted_at     TIMESTAMP,
+    ended_at        TIMESTAMP,
+    end_reason      VARCHAR(32),
+    deleted         TINYINT NOT NULL DEFAULT 0,
+    INDEX idx_adv_business (business_id),
+    INDEX idx_adv_advisor (advisor_id),
+    INDEX idx_adv_status (status)
+);

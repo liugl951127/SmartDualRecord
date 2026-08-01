@@ -102,6 +102,36 @@ export const fileApi = {
     http.post<any>('/file/' + fileId + '/sign', req).then(r => r.data)
 }
 
+// ===== 理财经理转接 (v1.5 H5 → PC) =====
+export const advisorApi = {
+  listAdvisors: () =>
+    http.get<any[]>('/advisor/list').then(r => r.data),
+
+  requestTransfer: (req: any) =>
+    http.post<any>('/advisor/request', req).then(r => r.data),
+
+  getActive: (businessId: string) =>
+    http.get<any>('/advisor/active/' + businessId).then(r => r.data),
+
+  end: (sessionId: string, endReason: string) =>
+    http.post<any>('/advisor/' + sessionId + '/end', null,
+      { params: { endReason } }).then(r => r.data),
+
+  listPending: (advisorId: string) =>
+    http.get<any[]>('/advisor/pending/' + advisorId).then(r => r.data),
+
+  listActive: (advisorId: string) =>
+    http.get<any[]>('/advisor/advisor/active/' + advisorId).then(r => r.data),
+
+  accept: (sessionId: string, advisorId: string, advisorName: string) =>
+    http.post<any>('/advisor/' + sessionId + '/accept', null,
+      { params: { advisorId, advisorName } }).then(r => r.data),
+
+  decline: (sessionId: string, reason: string) =>
+    http.post<any>('/advisor/' + sessionId + '/decline', null,
+      { params: { reason } }).then(r => r.data)
+}
+
 // ===== 话术 =====
 export const scriptApi = {
   getScript: (productId: string) =>
