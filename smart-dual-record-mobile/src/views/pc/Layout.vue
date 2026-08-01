@@ -479,37 +479,72 @@ onUnmounted(() => {
 
 // ============ 侧边栏 ============
 .sidebar {
-  width: 232px;
+  width: 236px;
   background: var(--primary-gradient);
   color: white;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  transition: width 0.2s;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   z-index: 100;
-  &.collapsed { width: 64px; }
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      radial-gradient(ellipse 200px 100px at 0% 0%, rgba(192, 133, 82, 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse 200px 100px at 100% 100%, rgba(59, 130, 246, 0.06) 0%, transparent 50%);
+    pointer-events: none;
+  }
+  &.collapsed { width: 68px; }
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 18px 20px;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
+  gap: 12px;
+  padding: 20px 20px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
   flex-shrink: 0;
+  position: relative;
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 20px;
+    width: 40px; height: 2px;
+    background: var(--accent-gradient);
+    border-radius: 1px;
+  }
 }
 .brand-logo {
-  width: 36px; height: 36px;
-  background: rgba(184, 134, 11, 0.2);
+  width: 38px; height: 38px;
+  background: var(--accent-gradient);
   border-radius: var(--radius);
   display: flex; align-items: center; justify-content: center;
   font-size: 20px;
   flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(192, 133, 82, 0.3);
+  position: relative;
+  overflow: hidden;
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 50%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 100%);
+  }
 }
 .brand-text { min-width: 0; }
-.brand-name { font-size: 16px; font-weight: 700; }
-.brand-tag { font-size: 11px; opacity: 0.6; }
+.brand-name { font-size: 16px; font-weight: 700; letter-spacing: -0.2px; }
+.brand-tag {
+  font-size: 10px;
+  opacity: 0.55;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-weight: 500;
+  margin-top: 1px;
+}
 
 .nav-section { padding: 12px 20px 4px; }
 .nav-label {
@@ -535,20 +570,21 @@ onUnmounted(() => {
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  color: rgba(255,255,255,0.7);
+  color: rgba(255,255,255,0.65);
   text-decoration: none;
   font-size: 13px;
+  font-weight: 500;
   border-radius: var(--radius);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s;
   &:hover {
     color: white;
-    background: rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.05);
   }
   &.active {
     color: white;
-    background: rgba(184, 134, 11, 0.2);
-    box-shadow: 0 2px 8px rgba(184, 134, 11, 0.15);
+    background: linear-gradient(90deg, rgba(192, 133, 82, 0.18) 0%, rgba(192, 133, 82, 0.08) 100%);
+    box-shadow: 0 2px 12px rgba(192, 133, 82, 0.12);
     &::before {
       content: '';
       position: absolute;
@@ -557,6 +593,7 @@ onUnmounted(() => {
       background: var(--accent-light);
       border-radius: 0 2px 2px 0;
     }
+    .ni { color: var(--accent-light); }
   }
 }
 .ni { font-size: 18px; flex-shrink: 0; }
@@ -608,8 +645,9 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px;
+  padding: 10px;
   background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
   border-radius: var(--radius);
 }
 .u-avatar {
@@ -659,7 +697,9 @@ onUnmounted(() => {
 }
 
 .topbar {
-  background: white;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
   padding: 12px 24px;
   display: flex;
@@ -885,9 +925,11 @@ onUnmounted(() => {
 
 // ============ 状态栏 ============
 .statusbar {
-  background: white;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border-top: 1px solid var(--border);
-  padding: 6px 24px;
+  padding: 8px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
