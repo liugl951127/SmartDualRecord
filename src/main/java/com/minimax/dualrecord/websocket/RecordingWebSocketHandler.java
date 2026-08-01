@@ -12,6 +12,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -32,12 +33,12 @@ public class RecordingWebSocketHandler extends TextWebSocketHandler {
 
     private final ComplianceService complianceService;
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final Map<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
+    private final Map<String, Set<WebSocketSession>> sessions = new ConcurrentHashMap<>();
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
         String businessId = extractBusinessId(session);
-        sessions.put(businessId, session);
+        sessions.computeIfAbsent(businessId, k -> ConcurrentHashMap.newKeySet()).add(session);
         log.info("WebSocket 连接建立: businessId={}, sessionId={}", businessId, session.getId());
     }
 
@@ -70,18 +71,31 @@ public class RecordingWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
         String businessId = extractBusinessId(session);
-        sessions.remove(businessId);
+        Set<WebSocketSession> set = sessions.get(businessId);
+        if (set != null) {
+            set.remove(session);
+            if (set.isEmpty()) sessions.remove(businessId);
+        }
         log.info("WebSocket 关闭: businessId={}, status={}", businessId, status);
     }
 
     /**
-     * 服务端推送事件给指定业务
+     * 服务端推送事件给指定业务 (单连接兼容)
      */
     public void sendEvent(String businessId, Object event) {
-        WebSocketSession session = sessions.get(businessId);
-        if (session != null && session.isOpen()) {
-            sendEvent(session, event);
+        Set<WebSocketSession> set = sessions.get(businessId);
+        if (set != null) {
+            for (WebSocketSession s : set) {
+                if (s.isOpen()) sendEvent(s, event);
+            }
         }
+    }
+
+    /**
+     * 广播: 给业务所有连接 (坐席 + 客户) 都发
+     */
+    public void broadcast(String businessId, Object event) {
+        sendEvent(businessId, event);
     }
 
     private void sendEvent(WebSocketSession session, Object event) {

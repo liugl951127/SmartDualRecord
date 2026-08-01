@@ -19,7 +19,7 @@
  */
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { recordingApi } from '@/api'
+import { recordingApi, fileApi } from '@/api'
 
 // ============================================================================
 // 1. 状态
@@ -154,6 +154,19 @@ const recAsrInput = ref('')
 const recRecordingId = ref<string>('')
 let recTimer: number | null = null
 
+// v1.5 坐席推送文件
+const pushedFiles = ref<any[]>([])
+const latestPushedFile = ref<any>(null)
+const showFileViewer = ref(false)
+const viewingFile = ref<any>(null)
+const showSignPad = ref(false)
+const signingFile = ref<any>(null)
+const customerSignRef = ref<HTMLCanvasElement | null>(null)
+const isFileSignDrawing = ref(false)
+const hasSign = ref(false)
+let clientWs: WebSocket | null = null
+const clientWsConnected = ref(false)
+
 // 8 节点
 const CLIENT_NODES = [
   { code: '01-IDENTITY', name: '出示身份', desc: '请出示您的身份证', mandatory: ['请坐正, 露出正脸', '请打开您的身份证件'], critical: false, dur: 30 },
@@ -176,8 +189,8 @@ const hesPeriodEnd = computed(() => {
 
 // 客户侧画板 (签名)
 const signCanvasRef = ref<HTMLCanvasElement | null>(null)
-const isDrawing = ref(false)
-const hasSignature = ref(false)
+const isOldSignDrawing = ref(false)
+const hasOldSignature = ref(false)
 
 // ============================================================================
 // 2. 计算属性
@@ -285,18 +298,18 @@ function simulateFaceMatch() {
 
 // 签名画板
 function startDraw(e: MouseEvent | TouchEvent) {
-  isDrawing.value = true
+  isOldSignDrawing.value = true
   draw(e)
 }
 function endDraw() {
-  isDrawing.value = false
+  isOldSignDrawing.value = false
   if (signCanvasRef.value) {
     const ctx = signCanvasRef.value.getContext('2d')
     ctx?.beginPath()
   }
 }
 function draw(e: MouseEvent | TouchEvent) {
-  if (!isDrawing.value || !signCanvasRef.value) return
+  if (!isOldSignDrawing.value || !signCanvasRef.value) return
   const canvas = signCanvasRef.value
   const ctx = canvas.getContext('2d')
   if (!ctx) return
@@ -316,17 +329,17 @@ function draw(e: MouseEvent | TouchEvent) {
   ctx.stroke()
   ctx.beginPath()
   ctx.moveTo(x, y)
-  hasSignature.value = true
+  hasOldSignature.value = true
 }
 function clearSignature() {
   if (!signCanvasRef.value) return
   const ctx = signCanvasRef.value.getContext('2d')
   ctx?.clearRect(0, 0, signCanvasRef.value.width, signCanvasRef.value.height)
   ctx?.beginPath()
-  hasSignature.value = false
+  hasOldSignature.value = false
 }
 function confirmIdentity() {
-  if (!hasSignature.value) {
+  if (!hasOldSignature.value) {
     ElMessage.warning('请先签名')
     return
   }
@@ -485,13 +498,156 @@ onMounted(async () => {
   }
   // 自动启动环境检测
   startEnvCheck()
+  // v1.5: 加载已推送的文件 + WebSocket
+  await loadPushedFiles()
+  connectClientWs()
 })
 
 onUnmounted(() => {
   if (envStream.value) envStream.value.getTracks().forEach(t => t.stop())
   if (envMicTimer) cancelAnimationFrame(envMicTimer)
   stopRecording()
+  if (clientWs) clientWs.close()
 })
+
+// ============================================================================
+// v1.5 文件推送 (客户侧)
+// ============================================================================
+async function loadPushedFiles() {
+  try {
+    const list = await fileApi.list(businessId.value)
+    pushedFiles.value = list
+    // 找最近未签署/未查看的
+    const pending = list.find(f => f.status === 'PUSHED' || (f.status === 'VIEWED' && !f.signedAt && f.fileCategory === 'CONTRACT'))
+    if (pending) latestPushedFile.value = pending
+  } catch (e) { pushedFiles.value = [] }
+}
+
+function connectClientWs() {
+  const proto = window.location.protocol === 'https:' ? 'wss' : 'ws'
+  const host = (window as any).location?.host || 'localhost:8080'
+  const url = `${proto}://${host}/ws/recording/${businessId.value}`
+  try {
+    clientWs = new WebSocket(url)
+    clientWs.onopen = () => { clientWsConnected.value = true }
+    clientWs.onclose = () => {
+      clientWsConnected.value = false
+      setTimeout(connectClientWs, 3000)
+    }
+    clientWs.onerror = () => { clientWsConnected.value = false }
+    clientWs.onmessage = (e) => {
+      try {
+        const msg = JSON.parse(e.data)
+        if (msg.type === 'FILE_PUSHED') {
+          ElMessage.warning(`📤 坐席推送给您: ${msg.fileName}`)
+          loadPushedFiles()
+        }
+      } catch (err) { /* ignore */ }
+    }
+  } catch (e) { /* ignore */ }
+}
+
+function openFileViewer(file: any) {
+  viewingFile.value = file
+  showFileViewer.value = true
+  // 自动标记已查看
+  if (!file.viewedAt) {
+    fileApi.markViewed(file.fileId).then(() => loadPushedFiles())
+  }
+}
+
+async function markFileViewed(file: any) {
+  try {
+    await fileApi.markViewed(file.fileId)
+    ElMessage.success('✓ 已记录您查看过此文件')
+    await loadPushedFiles()
+  } catch (e: any) {
+    ElMessage.error('标记失败: ' + e.message)
+  }
+}
+
+function openSignPad(file: any) {
+  signingFile.value = file
+  showSignPad.value = true
+  hasSign.value = false
+  // 等 DOM 更新后清空 canvas
+  setTimeout(() => {
+    if (customerSignRef.value) {
+      const ctx = customerSignRef.value.getContext('2d')
+      ctx?.clearRect(0, 0, customerSignRef.value.width, customerSignRef.value.height)
+      ctx?.beginPath()
+    }
+  }, 100)
+}
+
+function startSignDraw(e: MouseEvent | TouchEvent) {
+  isFileSignDrawing.value = true
+  drawSign(e)
+}
+function endSignDraw() {
+  isFileSignDrawing.value = false
+  if (customerSignRef.value) {
+    const ctx = customerSignRef.value.getContext('2d')
+    ctx?.beginPath()
+  }
+}
+function drawSign(e: MouseEvent | TouchEvent) {
+  if (!isFileSignDrawing.value || !customerSignRef.value) return
+  const canvas = customerSignRef.value
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+  const rect = canvas.getBoundingClientRect()
+  let x, y
+  if ('touches' in e) {
+    x = e.touches[0].clientX - rect.left
+    y = e.touches[0].clientY - rect.top
+  } else {
+    x = e.clientX - rect.left
+    y = e.clientY - rect.top
+  }
+  ctx.lineWidth = 2.5
+  ctx.lineCap = 'round'
+  ctx.strokeStyle = '#1e2a47'
+  ctx.lineTo(x, y)
+  ctx.stroke()
+  ctx.beginPath()
+  ctx.moveTo(x, y)
+  hasSign.value = true
+}
+function clearSign() {
+  if (!customerSignRef.value) return
+  const ctx = customerSignRef.value.getContext('2d')
+  ctx?.clearRect(0, 0, customerSignRef.value.width, customerSignRef.value.height)
+  ctx?.beginPath()
+  hasSign.value = false
+}
+async function confirmSign() {
+  if (!hasSign.value || !signingFile.value) {
+    ElMessage.warning('请先签名')
+    return
+  }
+  // 提取签名 base64
+  const dataUrl = customerSignRef.value?.toDataURL('image/png') || ''
+  try {
+    await fileApi.signFile(signingFile.value.fileId, { signatureData: dataUrl, rejected: false })
+    ElMessage.success('✓ 已签署')
+    showSignPad.value = false
+    await loadPushedFiles()
+  } catch (e: any) {
+    ElMessage.error('签署失败: ' + e.message)
+  }
+}
+async function rejectFile() {
+  if (!signingFile.value) return
+  try {
+    await fileApi.signFile(signingFile.value.fileId, { rejected: true, rejectReason: '客户拒绝签署' })
+    ElMessage.warning('已拒签')
+    showSignPad.value = false
+    await loadPushedFiles()
+  } catch (e: any) {
+    ElMessage.error('拒签失败: ' + e.message)
+  }
+}
 
 // 风险等级变化时提示
 watch(riskLevel, (v) => {
@@ -809,13 +965,13 @@ watch(resumeFromOrder, (o) => {
                 @touchmove.prevent="draw"
                 @touchend="endDraw"
               />
-              <div v-if="!hasSignature" class="sign-placeholder">请用鼠标 / 手指在方框内签名</div>
+              <div v-if="!hasOldSignature" class="sign-placeholder">请用鼠标 / 手指在方框内签名</div>
             </div>
             <div class="sign-actions">
               <el-button @click="clearSignature">
                 <el-icon><RefreshLeft /></el-icon>清除
               </el-button>
-              <el-button type="primary" size="large" @click="confirmIdentity" :disabled="!hasSignature" style="min-width: 200px;">
+              <el-button type="primary" size="large" @click="confirmIdentity" :disabled="!hasOldSignature" style="min-width: 200px;">
                 确认提交
               </el-button>
             </div>
@@ -886,6 +1042,32 @@ watch(resumeFromOrder, (o) => {
       <!-- ============================== -->
       <section v-show="currentStep === 5" class="cp-section recording">
         <h2 class="section-title">🎬 双录录制中</h2>
+
+        <!-- v1.5 坐席推送文件提示 -->
+        <el-alert
+          v-if="latestPushedFile"
+          type="info"
+          :closable="false"
+          show-icon
+          style="margin-bottom: 12px;"
+          :title="`📤 坐席推送给您: ${latestPushedFile.fileName}`"
+        >
+          <template #default>
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <el-tag size="small">{{ latestPushedFile.fileType }}</el-tag>
+              <span v-if="latestPushedFile.remark" style="color: var(--ink-3); font-size: 12px;">备注: {{ latestPushedFile.remark }}</span>
+              <el-button size="small" type="primary" @click="openFileViewer(latestPushedFile)">
+                <el-icon><View /></el-icon>查看文件
+              </el-button>
+              <el-button v-if="!latestPushedFile.viewedAt" size="small" @click="markFileViewed(latestPushedFile)">
+                <el-icon><Check /></el-icon>我已查看
+              </el-button>
+              <el-button v-if="latestPushedFile.fileCategory === 'CONTRACT' && !latestPushedFile.signedAt" size="small" type="success" @click="openSignPad(latestPushedFile)">
+                <el-icon><EditPen /></el-icon>签署
+              </el-button>
+            </div>
+          </template>
+        </el-alert>
 
         <!-- 时间轴 -->
         <div class="rec-timeline">
@@ -1094,6 +1276,74 @@ watch(resumeFromOrder, (o) => {
       </section>
     </main>
 
+    <!-- v1.5 文件查看器 -->
+    <el-dialog v-model="showFileViewer" :title="viewingFile?.fileName || '文件查看'" width="700px">
+      <div v-if="viewingFile" class="file-viewer">
+        <div class="file-info">
+          <el-tag size="small">{{ viewingFile.fileType }}</el-tag>
+          <el-tag size="small">{{ viewingFile.fileCategory }}</el-tag>
+          <span class="file-time">推送时间: {{ viewingFile.pushedAt ? new Date(viewingFile.pushedAt).toLocaleString('zh-CN') : '—' }}</span>
+        </div>
+        <div v-if="viewingFile.remark" class="file-remark">
+          <strong>坐席备注:</strong> {{ viewingFile.remark }}
+        </div>
+        <div class="file-preview">
+          <div class="preview-placeholder">
+            <div class="big-icon">📄</div>
+            <div>{{ viewingFile.fileName }}</div>
+            <div style="font-size: 11px; color: var(--ink-3); margin-top: 4px;">
+              (PDF/图片实际预览接 CDN, 此处模拟)
+            </div>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="showFileViewer = false">关闭</el-button>
+        <el-button
+          v-if="viewingFile && viewingFile.fileCategory === 'CONTRACT' && !viewingFile.signedAt"
+          type="success"
+          @click="openSignPad(viewingFile); showFileViewer = false"
+        >
+          <el-icon><EditPen /></el-icon>签署合同
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- v1.5 客户签署弹窗 -->
+    <el-dialog v-model="showSignPad" title="电子签署" width="500px">
+      <p v-if="signingFile" style="margin: 0 0 12px;">
+        请在下方手写签名以确认: <strong>{{ signingFile.fileName }}</strong>
+      </p>
+      <div class="sign-frame">
+        <canvas
+          ref="customerSignRef"
+          width="450"
+          height="160"
+          class="sign-canvas"
+          @mousedown="startSignDraw"
+          @mousemove="drawSign"
+          @mouseup="endSignDraw"
+          @mouseleave="endSignDraw"
+          @touchstart.prevent="startSignDraw"
+          @touchmove.prevent="drawSign"
+          @touchend="endSignDraw"
+        />
+        <div v-if="!hasSign" class="sign-placeholder">请用鼠标 / 手指在方框内签名</div>
+      </div>
+      <template #footer>
+        <el-button @click="showSignPad = false">取消</el-button>
+        <el-button @click="clearSign">
+          <el-icon><RefreshLeft /></el-icon>清除
+        </el-button>
+        <el-button type="danger" plain @click="rejectFile" v-if="signingFile">
+          <el-icon><Close /></el-icon>拒签
+        </el-button>
+        <el-button type="success" :disabled="!hasSign" @click="confirmSign">
+          <el-icon><Check /></el-icon>确认签署
+        </el-button>
+      </template>
+    </el-dialog>
+
     <!-- 底部固定栏 -->
     <footer class="cp-footer">
       <div class="cp-footer-inner">
@@ -1267,6 +1517,17 @@ watch(resumeFromOrder, (o) => {
 .contact-value { font-size: 14px; font-weight: 600; }
 
 .cp-action-bar { display: flex; justify-content: center; gap: 12px; margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--line); }
+
+.file-viewer { padding: 8px 0; }
+.file-info { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+.file-time { font-size: 11px; color: var(--ink-3); margin-left: auto; font-family: 'JetBrains Mono', monospace; }
+.file-remark { padding: 8px 12px; background: rgba(184, 134, 11, 0.05); border-left: 3px solid var(--accent); border-radius: 0 4px 4px 0; font-size: 13px; margin-bottom: 12px; }
+.file-preview { background: var(--bg-2); border-radius: 8px; padding: 40px; text-align: center; min-height: 300px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.preview-placeholder .big-icon { font-size: 64px; opacity: 0.3; }
+
+.sign-frame { position: relative; width: 100%; background: #fff; border: 2px dashed var(--ink-3); border-radius: 8px; margin: 8px 0; }
+.sign-canvas { display: block; width: 100%; height: 160px; cursor: crosshair; touch-action: none; }
+.sign-placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--ink-3); pointer-events: none; font-style: italic; }
 
 /* Footer */
 .cp-footer { background: var(--primary); color: #fff; padding: 12px 24px; }

@@ -81,6 +81,27 @@ export const recordingApi = {
       { params: { businessId, token } }).then(r => r.data)
 }
 
+// ===== 文件推送 (v1.5) =====
+export const fileApi = {
+  templates: () =>
+    http.get<any[]>('/file/templates').then(r => r.data),
+
+  list: (businessId: string) =>
+    http.get<any[]>('/file/list/' + businessId).then(r => r.data),
+
+  get: (fileId: string) =>
+    http.get<any>('/file/' + fileId).then(r => r.data),
+
+  push: (req: any, operatorId: string) =>
+    http.post<any>('/file/push', req, { params: { operatorId } }).then(r => r.data),
+
+  markViewed: (fileId: string) =>
+    http.post<any>('/file/' + fileId + '/view').then(r => r.data),
+
+  signFile: (fileId: string, req: { signatureData?: string; rejected?: boolean; rejectReason?: string }) =>
+    http.post<any>('/file/' + fileId + '/sign', req).then(r => r.data)
+}
+
 // ===== 话术 =====
 export const scriptApi = {
   getScript: (productId: string) =>

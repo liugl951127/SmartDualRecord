@@ -268,3 +268,27 @@ CREATE TABLE tb_forbidden_phrase (
     deleted         TINYINT NOT NULL DEFAULT 0,
     UNIQUE KEY uk_phrase (phrase)
 );
+
+-- ---------- 9. 坐席推送文件表 (v1.5) ----------
+DROP TABLE IF EXISTS tb_pushed_file;
+CREATE TABLE tb_pushed_file (
+    id              VARCHAR(32) PRIMARY KEY,
+    business_id     VARCHAR(64) NOT NULL,
+    file_id         VARCHAR(64) NOT NULL UNIQUE,
+    file_name       VARCHAR(256) NOT NULL,
+    file_type       VARCHAR(16) NOT NULL,            -- PDF / PNG / JPG / MP4 / TXT
+    file_url        VARCHAR(512) NOT NULL,
+    file_size       BIGINT,
+    file_category   VARCHAR(32),                     -- BROCHURE / DISCLOSURE / CONTRACT / ID_CARD / OTHER
+    pushed_by       VARCHAR(64),
+    pushed_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    viewed_at       TIMESTAMP,
+    signed_at       TIMESTAMP,
+    rejected_at     TIMESTAMP,
+    status          VARCHAR(16) NOT NULL DEFAULT 'PUSHED',  -- PUSHED / VIEWED / SIGNED / REJECTED
+    signature_data  TEXT,                            -- 客户签字 base64
+    remark          VARCHAR(512),
+    deleted         TINYINT NOT NULL DEFAULT 0,
+    INDEX idx_pf_business (business_id),
+    INDEX idx_pf_status (status)
+);

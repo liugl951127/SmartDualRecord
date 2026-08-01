@@ -9,6 +9,7 @@ import ScriptConfigWorkbench from '@/components/ScriptConfigWorkbench.vue'
 import ClientPortal from '@/components/ClientPortal.vue'
 import OfflineDualRecord from '@/components/OfflineDualRecord.vue'
 import VideoAICheck from '@/components/VideoAICheck.vue'
+import AgentFilePush from '@/components/AgentFilePush.vue'
 import StateMachineViewer from '@/components/StateMachineViewer.vue'
 import RiskAssessmentPanel from '@/components/RiskAssessmentPanel.vue'
 import RecordingCompliancePanel from '@/components/RecordingCompliancePanel.vue'
@@ -42,6 +43,7 @@ const tabs = [
   { name: 'client', label: '客户进线', icon: 'UserFilled' },
   { name: 'offline', label: '线下双录', icon: 'Bank' },
   { name: 'videoai', label: '视频AI检测', icon: 'Cpu' },
+  { name: 'filepush', label: '文件推送', icon: 'Share' },
   { name: 'state', label: '状态机', icon: 'Connection' }
 ]
 </script>
@@ -91,6 +93,7 @@ const tabs = [
           <ClientPortal v-else-if="activeTab === 'client'" />
           <OfflineDualRecord v-else-if="activeTab === 'offline'" />
           <VideoAICheck v-else-if="activeTab === 'videoai'" />
+          <AgentFilePush v-else-if="activeTab === 'filepush'" />
           <StateMachineViewer v-else-if="activeTab === 'state'" :transitions="transitions" />
         </el-tab-pane>
       </el-tabs>
