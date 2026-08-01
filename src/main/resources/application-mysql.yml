@@ -1,0 +1,31 @@
+# MySQL/MariaDB 生产模式 · 真实数据库
+spring:
+  datasource:
+    url: jdbc:mariadb://127.0.0.1:3306/dualrecord?useUnicode=true&characterEncoding=utf8mb4&serverTimezone=Asia/Shanghai
+    driver-class-name: org.mariadb.jdbc.Driver
+    username: root
+    password: ""
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/schema_mysql.sql
+      data-locations: classpath:db/data.sql
+      continue-on-error: false
+      encoding: UTF-8
+  jpa:
+    hibernate:
+      ddl-auto: none
+
+dual-record:
+  ai-gateway:
+    providers:
+      - name: mock
+        weight: 100
+        model: mock-llm-v1
+        endpoint: local://mock
+  recording:
+    allow-pause: true  # 沙箱模式允许暂停调试

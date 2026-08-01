@@ -113,7 +113,7 @@ CREATE TABLE tb_recording_access_log (
     duration_sec    INT,                             -- 看了多久
     ip_address      VARCHAR(45),
     access_token    VARCHAR(128),                    -- DRM token
-    accessed_at     TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    accessed_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_audit_rec (rec_id),
     INDEX idx_audit_user (user_id),
     INDEX idx_audit_time (accessed_at),
@@ -217,7 +217,7 @@ CREATE TABLE tb_event (
     to_state        VARCHAR(32),
     actor_id        VARCHAR(64),
     actor_type      VARCHAR(16),                    -- SYSTEM / HUMAN / AI
-    created_at      TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_evt_business (business_id),
     INDEX idx_created (created_at),
     `deleted`       TINYINT NOT NULL DEFAULT 0
@@ -240,6 +240,7 @@ CREATE TABLE tb_script_template (
     approved_by         VARCHAR(64),
     approved_at         TIMESTAMP,
     created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `deleted`             TINYINT NOT NULL DEFAULT 0,
     UNIQUE KEY uk_product_version (product_id, version)
 );

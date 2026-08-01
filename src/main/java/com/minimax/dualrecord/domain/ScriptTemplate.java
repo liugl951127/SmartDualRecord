@@ -63,6 +63,9 @@ public class ScriptTemplate {
     @TableField("created_at")
     private LocalDateTime createdAt;
 
+    @TableField("updated_at")
+    private LocalDateTime updatedAt;
+
     @TableField("deleted")
     private Integer deleted;
 }

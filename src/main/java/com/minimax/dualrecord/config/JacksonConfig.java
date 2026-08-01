@@ -3,6 +3,7 @@ package com.minimax.dualrecord.config;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,6 +29,8 @@ public class JacksonConfig {
     @Primary
     public ObjectMapper objectMapper() {
         ObjectMapper mapper = new ObjectMapper();
+        // ★ 关键: 注册 JavaTimeModule, 支持 LocalDateTime/LocalDate 等 Java 8 时间类型
+        mapper.registerModule(new JavaTimeModule());
         // ★ 关键: 不要因为 bean 没有 getter 就抛错
         //   这能避免 CGLIB 代理对象 (含 $$beanFactory 等字段) 序列化失败
         mapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
